@@ -5,12 +5,10 @@ import FormProvider from '@components/Form/FormProvider';
 import InputWrapper from '@components/Form/InputWrapper';
 import type {FormOnyxValues} from '@components/Form/types';
 import HeaderWithBackButton from '@components/HeaderWithBackButton';
-import {usePersonalDetails} from '@components/OnyxListItemProvider';
 import ScreenWrapper from '@components/ScreenWrapper';
 import TextInput from '@components/TextInput';
 import {useMemoizedLazyExpensifyIcons, useMemoizedLazyIllustrations} from '@hooks/useLazyAsset';
 import useLocalize from '@hooks/useLocalize';
-import useOnyx from '@hooks/useOnyx';
 import useTheme from '@hooks/useTheme';
 import useThemeStyles from '@hooks/useThemeStyles';
 import Navigation from '@libs/Navigation/Navigation';
@@ -26,19 +24,10 @@ function AddAgentPage() {
     const theme = useTheme();
     const illustrations = useMemoizedLazyIllustrations(['AiBot']);
     const expensifyIcons = useMemoizedLazyExpensifyIcons(['Sync']);
-    const personalDetailsList = usePersonalDetails();
-    const [session] = useOnyx(ONYXKEYS.SESSION);
-
-    const currentUserDisplayName = personalDetailsList?.[session?.accountID ?? CONST.DEFAULT_NUMBER_ID]?.displayName ?? '';
-    const defaultAgentName = `${currentUserDisplayName}'s Agent`;
-
     const avatarStyle = [styles.avatarXLarge, styles.alignSelfCenter];
 
     const validate = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.ADD_AGENT_FORM>): Errors => {
         const errors: Errors = {};
-        if (!values[INPUT_IDS.FIRST_NAME].trim()) {
-            errors[INPUT_IDS.FIRST_NAME] = translate('common.error.fieldRequired');
-        }
         if (!values[INPUT_IDS.PROMPT].trim()) {
             errors[INPUT_IDS.PROMPT] = translate('common.error.fieldRequired');
         }
@@ -46,7 +35,8 @@ function AddAgentPage() {
     };
 
     const handleSubmit = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.ADD_AGENT_FORM>) => {
-        createAgent(values[INPUT_IDS.FIRST_NAME].trim(), values[INPUT_IDS.PROMPT].trim());
+        const firstName = values[INPUT_IDS.FIRST_NAME].trim() || undefined;
+        createAgent(firstName, values[INPUT_IDS.PROMPT].trim());
         Navigation.goBack();
     };
 
@@ -90,7 +80,6 @@ function AddAgentPage() {
                         label={translate('addAgentPage.agentName')}
                         accessibilityLabel={translate('addAgentPage.agentName')}
                         role={CONST.ROLE.PRESENTATION}
-                        defaultValue={defaultAgentName}
                         autoCapitalize="words"
                         spellCheck={false}
                     />
