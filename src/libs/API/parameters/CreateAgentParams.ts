@@ -1,5 +1,6 @@
 type CreateAgentParams = {
-    agentName: string;
+    firstName?: string;
+    customExpensifyAvatarID?: string;
     prompt: string;
 };
 

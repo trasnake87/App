@@ -80,7 +80,7 @@ function AgentsPage() {
             success
             icon={icons.Plus}
             text={translate('agentsPage.newAgent')}
-            onPress={() => Navigation.navigate(ROUTES.SETTINGS_AGENTS_NEW)}
+            onPress={() => Navigation.navigate(ROUTES.SETTINGS_AGENTS_ADD)}
         />
     );
 

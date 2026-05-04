@@ -2,19 +2,19 @@ import type {ValueOf} from 'type-fest';
 import type Form from './Form';
 
 const INPUT_IDS = {
-    AGENT_NAME: 'agentName',
-    INSTRUCTIONS: 'instructions',
+    FIRST_NAME: 'firstName',
+    PROMPT: 'prompt',
 } as const;
 
 type InputID = ValueOf<typeof INPUT_IDS>;
 
-type NewAgentForm = Form<
+type AddAgentForm = Form<
     InputID,
     {
-        [INPUT_IDS.AGENT_NAME]: string;
-        [INPUT_IDS.INSTRUCTIONS]: string;
+        [INPUT_IDS.FIRST_NAME]: string;
+        [INPUT_IDS.PROMPT]: string;
     }
 >;
 
-export type {NewAgentForm};
+export type {AddAgentForm};
 export default INPUT_IDS;

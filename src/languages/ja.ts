@@ -2700,9 +2700,11 @@ ${date} の ${merchant} への ${amount}`,
         title: '担当者',
         subtitle: 'ワークフローを処理するエージェントを作成しましょう。手作業を省いて、1日の時間を何時間も取り戻せます。',
         newAgent: '新しいエージェント',
+        chat: 'Chat',
+        copilot: 'Co-pilot',
         emptyAgents: {title: 'エージェントは作成されていません', subtitle: '手作業はやめて、代わりにエージェントに指示を出して、時間を大幅に節約しましょう。'},
     },
-    newAgentPage: {
+    addAgentPage: {
         title: '新しいエージェント',
         agentName: 'エージェント名',
         instructions: 'カスタム指示を書く',

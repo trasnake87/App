@@ -373,8 +373,8 @@ const config: LinkingOptions<RootNavigatorParamList>['config'] = {
                             path: ROUTES.SETTINGS_BANK_ACCOUNT_PURPOSE,
                             exact: true,
                         },
-                        [SCREENS.SETTINGS.AGENTS.NEW]: {
-                            path: ROUTES.SETTINGS_AGENTS_NEW,
+                        [SCREENS.SETTINGS.AGENTS.ADD]: {
+                            path: ROUTES.SETTINGS_AGENTS_ADD,
                             exact: true,
                         },
                         [SCREENS.SETTINGS.RULES.ADD]: {

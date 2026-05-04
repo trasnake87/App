@@ -2725,9 +2725,11 @@ ${amount} voor ${merchant} - ${date}`,
         title: 'Agenten',
         subtitle: 'Maak agents aan om je workflow af te handelen. Sla het handmatige werk over en krijg uren van je dag terug.',
         newAgent: 'Nieuwe medewerker',
+        chat: 'Chat',
+        copilot: 'Co-pilot',
         emptyAgents: {title: 'Geen agents aangemaakt', subtitle: 'Stop met dingen handmatig doen. Geef in plaats daarvan een opdracht aan een agent en bespaar jezelf veel tijd.'},
     },
-    newAgentPage: {
+    addAgentPage: {
         title: 'Nieuwe agent',
         agentName: 'Agentnaam',
         instructions: 'Schrijf aangepaste instructies',

@@ -17,10 +17,10 @@ import Navigation from '@libs/Navigation/Navigation';
 import {createAgent} from '@userActions/Agent';
 import CONST from '@src/CONST';
 import ONYXKEYS from '@src/ONYXKEYS';
-import INPUT_IDS from '@src/types/form/NewAgentForm';
+import INPUT_IDS from '@src/types/form/AddAgentForm';
 import type {Errors} from '@src/types/onyx/OnyxCommon';
 
-function NewAgentPage() {
+function AddAgentPage() {
     const {translate} = useLocalize();
     const styles = useThemeStyles();
     const theme = useTheme();
@@ -34,37 +34,37 @@ function NewAgentPage() {
 
     const avatarStyle = [styles.avatarXLarge, styles.alignSelfCenter];
 
-    const validate = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.NEW_AGENT_FORM>): Errors => {
+    const validate = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.ADD_AGENT_FORM>): Errors => {
         const errors: Errors = {};
-        if (!values[INPUT_IDS.AGENT_NAME].trim()) {
-            errors[INPUT_IDS.AGENT_NAME] = translate('common.error.fieldRequired');
+        if (!values[INPUT_IDS.FIRST_NAME].trim()) {
+            errors[INPUT_IDS.FIRST_NAME] = translate('common.error.fieldRequired');
         }
-        if (!values[INPUT_IDS.INSTRUCTIONS].trim()) {
-            errors[INPUT_IDS.INSTRUCTIONS] = translate('common.error.fieldRequired');
+        if (!values[INPUT_IDS.PROMPT].trim()) {
+            errors[INPUT_IDS.PROMPT] = translate('common.error.fieldRequired');
         }
         return errors;
     };
 
-    const handleSubmit = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.NEW_AGENT_FORM>) => {
-        createAgent(values[INPUT_IDS.AGENT_NAME].trim(), values[INPUT_IDS.INSTRUCTIONS].trim());
+    const handleSubmit = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.ADD_AGENT_FORM>) => {
+        createAgent(values[INPUT_IDS.FIRST_NAME].trim(), values[INPUT_IDS.PROMPT].trim());
         Navigation.goBack();
     };
 
     return (
         <ScreenWrapper
-            testID={NewAgentPage.displayName}
+            testID={AddAgentPage.displayName}
             includeSafeAreaPaddingBottom
             offlineIndicatorStyle={styles.mtAuto}
         >
             <HeaderWithBackButton
-                title={translate('newAgentPage.title')}
+                title={translate('addAgentPage.title')}
                 onBackButtonPress={() => Navigation.goBack()}
             />
             <FormProvider
-                formID={ONYXKEYS.FORMS.NEW_AGENT_FORM}
+                formID={ONYXKEYS.FORMS.ADD_AGENT_FORM}
                 onSubmit={handleSubmit}
                 validate={validate}
-                submitButtonText={translate('newAgentPage.createAgent')}
+                submitButtonText={translate('addAgentPage.createAgent')}
                 style={[styles.flex1, styles.ph5]}
                 shouldUseScrollView={false}
                 submitFlexEnabled={false}
@@ -72,7 +72,7 @@ function NewAgentPage() {
             >
                 <View style={[styles.alignItemsCenter, styles.mt5, styles.mb4]}>
                     <AvatarButtonWithIcon
-                        text={translate('newAgentPage.switchAvatar')}
+                        text={translate('addAgentPage.switchAvatar')}
                         source={illustrations.AiBot}
                         onPress={() => {}}
                         size={CONST.AVATAR_SIZE.X_LARGE}
@@ -80,15 +80,15 @@ function NewAgentPage() {
                         editIcon={expensifyIcons.Sync}
                         editIconStyle={styles.smallEditIconAgent}
                         editIconFill={theme.textLight}
-                        sentryLabel={CONST.SENTRY_LABEL.NEW_AGENT_PAGE.AVATAR}
+                        sentryLabel={CONST.SENTRY_LABEL.ADD_AGENT_PAGE.AVATAR}
                     />
                 </View>
                 <View style={styles.mb4}>
                     <InputWrapper
                         InputComponent={TextInput}
-                        inputID={INPUT_IDS.AGENT_NAME}
-                        label={translate('newAgentPage.agentName')}
-                        accessibilityLabel={translate('newAgentPage.agentName')}
+                        inputID={INPUT_IDS.FIRST_NAME}
+                        label={translate('addAgentPage.agentName')}
+                        accessibilityLabel={translate('addAgentPage.agentName')}
                         role={CONST.ROLE.PRESENTATION}
                         defaultValue={defaultAgentName}
                         autoCapitalize="words"
@@ -98,9 +98,9 @@ function NewAgentPage() {
                 <View style={[styles.flex1, styles.mb4]}>
                     <InputWrapper
                         InputComponent={TextInput}
-                        inputID={INPUT_IDS.INSTRUCTIONS}
-                        label={translate('newAgentPage.instructions')}
-                        accessibilityLabel={translate('newAgentPage.instructions')}
+                        inputID={INPUT_IDS.PROMPT}
+                        label={translate('addAgentPage.instructions')}
+                        accessibilityLabel={translate('addAgentPage.instructions')}
                         role={CONST.ROLE.PRESENTATION}
                         multiline
                         containerStyles={[styles.flex1]}
@@ -114,6 +114,6 @@ function NewAgentPage() {
     );
 }
 
-NewAgentPage.displayName = 'NewAgentPage';
+AddAgentPage.displayName = 'AddAgentPage';
 
-export default NewAgentPage;
+export default AddAgentPage;

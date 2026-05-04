@@ -8,7 +8,7 @@ function openAgentsPage() {
     read(READ_COMMANDS.OPEN_AGENTS_PAGE, null);
 }
 
-function createAgent(agentName: string, prompt: string) {
+function createAgent(firstName: string, prompt: string) {
     const optimisticAccountID = -Math.round(Math.random() * 1000000);
 
     const optimisticData: AnyOnyxUpdate[] = [
@@ -18,7 +18,7 @@ function createAgent(agentName: string, prompt: string) {
             value: {
                 [optimisticAccountID]: {
                     accountID: optimisticAccountID,
-                    displayName: agentName,
+                    displayName: firstName,
                     isOptimisticPersonalDetail: true,
                 },
             },
@@ -60,7 +60,7 @@ function createAgent(agentName: string, prompt: string) {
         },
     ];
 
-    write(WRITE_COMMANDS.CREATE_AGENT, {agentName, prompt}, {optimisticData, successData, failureData});
+    write(WRITE_COMMANDS.CREATE_AGENT, {firstName, prompt}, {optimisticData, successData, failureData});
 }
 
 export {openAgentsPage, createAgent};

@@ -2732,9 +2732,11 @@ ${amount} für ${merchant} – ${date}`,
         title: 'Agenten',
         subtitle: 'Erstelle Agents, die deinen Workflow übernehmen. Spare dir die manuelle Arbeit und gewinne stundenweise Zeit im Alltag zurück.',
         newAgent: 'Neue:r Agent:in',
+        chat: 'Chat',
+        copilot: 'Co-pilot',
         emptyAgents: {title: 'Keine Agenten erstellt', subtitle: 'Hör auf, Dinge manuell zu erledigen. Weise stattdessen eine:n Agent:in an und spare dir eine Menge Zeit.'},
     },
-    newAgentPage: {
+    addAgentPage: {
         title: 'Neuer Agent',
         agentName: 'Agentenname',
         instructions: 'Benutzerdefinierte Anweisungen schreiben',

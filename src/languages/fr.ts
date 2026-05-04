@@ -2738,9 +2738,11 @@ ${amount} pour ${merchant} - ${date}`,
         title: 'Agents',
         subtitle: 'Créez des agents pour gérer votre flux de travail. Évitez le travail manuel et gagnez des heures dans votre journée.',
         newAgent: 'Nouvel agent',
+        chat: 'Chat',
+        copilot: 'Co-pilot',
         emptyAgents: {title: 'Aucun agent créé', subtitle: 'Arrêtez de faire les choses manuellement. Donnez plutôt des instructions à un agent et gagnez beaucoup de temps.'},
     },
-    newAgentPage: {
+    addAgentPage: {
         title: 'Nouvel agent',
         agentName: "Nom de l'agent",
         instructions: 'Rédiger des instructions personnalisées',
