@@ -2734,7 +2734,16 @@ ${amount} für ${merchant} – ${date}`,
         newAgent: 'Neue:r Agent:in',
         emptyAgents: {title: 'Keine Agenten erstellt', subtitle: 'Hör auf, Dinge manuell zu erledigen. Weise stattdessen eine:n Agent:in an und spare dir eine Menge Zeit.'},
     },
-    addAgentPage: {title: 'Neue Kontaktperson', agentName: 'Name des Agenten', instructions: 'Eigene Anweisungen schreiben', createAgent: 'Agent erstellen', switchAvatar: 'Avatar wechseln'},
+    addAgentPage: {
+        title: 'Neue Kontaktperson',
+        agentName: 'Name des Agenten',
+        instructions: 'Eigene Anweisungen schreiben',
+        createAgent: 'Agent erstellen',
+        switchAvatar: 'Avatar wechseln',
+        defaultAgentName: (displayName: string) => `Agent von ${displayName}`,
+        defaultPrompt:
+            'Ausgaben für Glücksspiele, Kinobesuche oder andere offensichtlich nicht geschäftliche Zwecke ablehnen.\n\nDen Benutzer immer daran erinnern, ein Belegbild beizufügen, das das Trinkgeld deutlich zeigt.\n\nDen Bericht genehmigen, wenn er früheren Berichten desselben Benutzers sehr ähnelt.\n\nBerichte mit mehr als 500 $ an Reiseausgaben ablehnen.',
+    },
     expenseRulesPage: {
         title: 'Ausgabenregeln',
         findRule: 'Regel finden',

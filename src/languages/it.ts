@@ -2729,7 +2729,16 @@ ${amount} per ${merchant} - ${date}`,
         newAgent: 'Nuovo agente',
         emptyAgents: {title: 'Nessun agente creato', subtitle: 'Smetti di fare le cose manualmente. Dai istruzioni a un agente e risparmia un sacco di tempo.'},
     },
-    addAgentPage: {title: 'Nuovo agente', agentName: 'Nome agente', instructions: 'Scrivi istruzioni personalizzate', createAgent: 'Crea agente', switchAvatar: 'Cambia avatar'},
+    addAgentPage: {
+        title: 'Nuovo agente',
+        agentName: 'Nome agente',
+        instructions: 'Scrivi istruzioni personalizzate',
+        createAgent: 'Crea agente',
+        switchAvatar: 'Cambia avatar',
+        defaultAgentName: (displayName: string) => `Agente di ${displayName}`,
+        defaultPrompt:
+            "Rifiutare le spese per giochi d'azzardo, cinema o altri motivi evidentemente non aziendali.\n\nRicordare all'utente di includere sempre un'immagine della ricevuta che mostri chiaramente la mancia.\n\nApprovare il rapporto se è molto simile ai rapporti precedenti dello stesso utente.\n\nRifiutare i rapporti con più di 500 $ di spese di viaggio.",
+    },
     expenseRulesPage: {
         title: 'Regole spese',
         findRule: 'Trova regola',

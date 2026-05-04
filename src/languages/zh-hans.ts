@@ -2652,7 +2652,16 @@ ${amount}，商户：${merchant} - 日期：${date}`,
         newAgent: '新代理人',
         emptyAgents: {title: '尚未创建代理', subtitle: '别再手动处理这些事情了。交给智能代理去执行，为自己节省大量时间。'},
     },
-    addAgentPage: {title: '新代理人', agentName: '代理姓名', instructions: '编写自定义说明', createAgent: '创建代理', switchAvatar: '切换头像'},
+    addAgentPage: {
+        title: '新代理人',
+        agentName: '代理姓名',
+        instructions: '编写自定义说明',
+        createAgent: '创建代理',
+        switchAvatar: '切换头像',
+        defaultAgentName: (displayName: string) => `${displayName}的代理`,
+        defaultPrompt:
+            '拒绝用于赌博、电影或其他明显非商业原因的费用。\n\n提醒用户始终附上清楚显示小费的收据图片。\n\n如果报告与同一用户之前的报告非常相似，则批准该报告。\n\n拒绝出行费用超过500美元的报告。',
+    },
     expenseRulesPage: {
         title: '报销规则',
         findRule: '查找规则',

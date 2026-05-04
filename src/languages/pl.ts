@@ -2720,7 +2720,16 @@ ${amount} dla ${merchant} - ${date}`,
         newAgent: 'Nowy agent',
         emptyAgents: {title: 'Nie utworzono agentów', subtitle: 'Przestań robić wszystko ręcznie. Zamiast tego wydaj polecenia agentowi i zaoszczędź mnóstwo czasu.'},
     },
-    addAgentPage: {title: 'Nowy agent', agentName: 'Nazwa agenta', instructions: 'Napisz własne instrukcje', createAgent: 'Utwórz agenta', switchAvatar: 'Zmień awatar'},
+    addAgentPage: {
+        title: 'Nowy agent',
+        agentName: 'Nazwa agenta',
+        instructions: 'Napisz własne instrukcje',
+        createAgent: 'Utwórz agenta',
+        switchAvatar: 'Zmień awatar',
+        defaultAgentName: (displayName: string) => `Agent użytkownika ${displayName}`,
+        defaultPrompt:
+            'Odrzucaj wydatki na hazard, filmy lub inne oczywiste powody niezwiązane z działalnością.\n\nPrzypominaj użytkownikowi o dołączeniu zdjęcia paragonu, na którym wyraźnie widać napiwek.\n\nZatwierdź raport, jeśli jest bardzo podobny do poprzednich raportów tego samego użytkownika.\n\nOdrzucaj raporty z wydatkami na podróże przekraczającymi 500 $.',
+    },
     expenseRulesPage: {
         title: 'Reguły wydatków',
         findRule: 'Znajdź regułę',

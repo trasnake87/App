@@ -2746,6 +2746,9 @@ ${amount} pour ${merchant} - ${date}`,
         instructions: 'Écrire des instructions personnalisées',
         createAgent: 'Créer un agent',
         switchAvatar: 'Changer d’avatar',
+        defaultAgentName: (displayName: string) => `Agent de ${displayName}`,
+        defaultPrompt:
+            'Rejeter les dépenses liées aux jeux d’argent, aux films ou à d’autres raisons manifestement non professionnelles.\n\nRappeler à l’utilisateur d’inclure toujours une image de reçu montrant clairement le pourboire.\n\nApprouver le rapport s’il est très similaire aux rapports précédents du même utilisateur.\n\nRejeter les rapports contenant plus de 500 $ en frais de déplacement.',
     },
     expenseRulesPage: {
         title: 'Règles de dépenses',

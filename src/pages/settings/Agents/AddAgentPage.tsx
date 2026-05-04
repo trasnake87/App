@@ -7,6 +7,7 @@ import type {FormOnyxValues} from '@components/Form/types';
 import HeaderWithBackButton from '@components/HeaderWithBackButton';
 import ScreenWrapper from '@components/ScreenWrapper';
 import TextInput from '@components/TextInput';
+import useCurrentUserPersonalDetails from '@hooks/useCurrentUserPersonalDetails';
 import {useMemoizedLazyExpensifyIcons, useMemoizedLazyIllustrations} from '@hooks/useLazyAsset';
 import useLocalize from '@hooks/useLocalize';
 import useTheme from '@hooks/useTheme';
@@ -22,6 +23,9 @@ function AddAgentPage() {
     const {translate} = useLocalize();
     const styles = useThemeStyles();
     const theme = useTheme();
+    const {displayName} = useCurrentUserPersonalDetails();
+    const defaultAgentName = displayName ? translate('addAgentPage.defaultAgentName', displayName) : undefined;
+    const defaultPrompt = translate('addAgentPage.defaultPrompt');
     const illustrations = useMemoizedLazyIllustrations(['AiBot']);
     const expensifyIcons = useMemoizedLazyExpensifyIcons(['Sync']);
     const avatarStyle = [styles.avatarXLarge, styles.alignSelfCenter];
@@ -82,6 +86,7 @@ function AddAgentPage() {
                         role={CONST.ROLE.PRESENTATION}
                         autoCapitalize="words"
                         spellCheck={false}
+                        defaultValue={defaultAgentName}
                     />
                 </View>
                 <View style={[styles.flex1, styles.mb4]}>
@@ -91,6 +96,7 @@ function AddAgentPage() {
                         label={translate('addAgentPage.instructions')}
                         accessibilityLabel={translate('addAgentPage.instructions')}
                         role={CONST.ROLE.PRESENTATION}
+                        defaultValue={defaultPrompt}
                         multiline
                         containerStyles={[styles.flex1]}
                         touchableInputWrapperStyle={[styles.flex1]}

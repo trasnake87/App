@@ -2726,6 +2726,9 @@ ${amount} para ${merchant} - ${date}`,
         instructions: 'Escrever instruções personalizadas',
         createAgent: 'Criar agente',
         switchAvatar: 'Trocar avatar',
+        defaultAgentName: (displayName: string) => `Agente de ${displayName}`,
+        defaultPrompt:
+            'Rejeitar despesas com jogos de azar, filmes ou outros motivos claramente não comerciais.\n\nLembrar o usuário de sempre incluir uma imagem do recibo que mostre claramente a gorjeta.\n\nAprovar o relatório se for muito semelhante a relatórios anteriores do mesmo usuário.\n\nRejeitar relatórios com mais de US$ 500 em despesas de viagem.',
     },
     expenseRulesPage: {
         title: 'Regras de despesas',

@@ -2702,7 +2702,16 @@ ${date} の ${merchant} への ${amount}`,
         newAgent: '新しいエージェント',
         emptyAgents: {title: 'エージェントは作成されていません', subtitle: '手作業はやめて、代わりにエージェントに指示を出して、時間を大幅に節約しましょう。'},
     },
-    addAgentPage: {title: '新しい担当者', agentName: '担当者名', instructions: 'カスタム手順を作成', createAgent: 'エージェントを作成', switchAvatar: 'アバターを切り替え'},
+    addAgentPage: {
+        title: '新しい担当者',
+        agentName: '担当者名',
+        instructions: 'カスタム手順を作成',
+        createAgent: 'エージェントを作成',
+        switchAvatar: 'アバターを切り替え',
+        defaultAgentName: (displayName: string) => `${displayName}のエージェント`,
+        defaultPrompt:
+            'ギャンブル、映画、その他の明らかに業務外の理由による経費を却下してください。\n\nチップがわかる領収書の画像を必ず添付するようユーザーに通知してください。\n\n同じユーザーの以前のレポートと非常に類似している場合はレポートを承認してください。\n\n交通費が500ドルを超えるレポートを却下してください。',
+    },
     expenseRulesPage: {
         title: '経費ルール',
         findRule: 'ルールを検索',

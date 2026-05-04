@@ -2727,7 +2727,16 @@ ${amount} voor ${merchant} - ${date}`,
         newAgent: 'Nieuwe medewerker',
         emptyAgents: {title: 'Geen agents aangemaakt', subtitle: 'Stop met dingen handmatig doen. Geef in plaats daarvan een opdracht aan een agent en bespaar jezelf veel tijd.'},
     },
-    addAgentPage: {title: 'Nieuwe medewerker', agentName: 'Naam agent', instructions: 'Aangepaste instructies schrijven', createAgent: 'Agent maken', switchAvatar: 'Wissel avatar'},
+    addAgentPage: {
+        title: 'Nieuwe medewerker',
+        agentName: 'Naam agent',
+        instructions: 'Aangepaste instructies schrijven',
+        createAgent: 'Agent maken',
+        switchAvatar: 'Wissel avatar',
+        defaultAgentName: (displayName: string) => `Agent van ${displayName}`,
+        defaultPrompt:
+            'Uitgaven voor gokken, films of andere duidelijk niet-zakelijke redenen afwijzen.\n\nDe gebruiker altijd herinneren een bonafoto toe te voegen waarop de fooi duidelijk te zien is.\n\nHet rapport goedkeuren als het sterk lijkt op eerdere rapporten van dezelfde gebruiker.\n\nRapporten met meer dan $500 aan reiskosten afwijzen.',
+    },
     expenseRulesPage: {
         title: 'Declaratieregels',
         findRule: 'Regel zoeken',
