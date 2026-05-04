@@ -5,10 +5,11 @@ import FormProvider from '@components/Form/FormProvider';
 import InputWrapper from '@components/Form/InputWrapper';
 import type {FormOnyxValues} from '@components/Form/types';
 import HeaderWithBackButton from '@components/HeaderWithBackButton';
+import {botAvatars} from '@components/Icon/DefaultBotAvatars';
 import ScreenWrapper from '@components/ScreenWrapper';
 import TextInput from '@components/TextInput';
 import useCurrentUserPersonalDetails from '@hooks/useCurrentUserPersonalDetails';
-import {useMemoizedLazyExpensifyIcons, useMemoizedLazyIllustrations} from '@hooks/useLazyAsset';
+import {useMemoizedLazyExpensifyIcons} from '@hooks/useLazyAsset';
 import useLocalize from '@hooks/useLocalize';
 import useTheme from '@hooks/useTheme';
 import useThemeStyles from '@hooks/useThemeStyles';
@@ -26,9 +27,9 @@ function AddAgentPage() {
     const {displayName} = useCurrentUserPersonalDetails();
     const defaultAgentName = displayName ? translate('addAgentPage.defaultAgentName', displayName) : undefined;
     const defaultPrompt = translate('addAgentPage.defaultPrompt');
-    const illustrations = useMemoizedLazyIllustrations(['AiBot']);
     const expensifyIcons = useMemoizedLazyExpensifyIcons(['Sync']);
     const avatarStyle = [styles.avatarXLarge, styles.alignSelfCenter];
+    const avatarSource = botAvatars[Math.floor(Math.random() * botAvatars.length)];
 
     const validate = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.ADD_AGENT_FORM>): Errors => {
         const errors: Errors = {};
@@ -68,7 +69,7 @@ function AddAgentPage() {
                     <View style={[styles.alignItemsCenter]}>
                         <AvatarButtonWithIcon
                             text={translate('addAgentPage.switchAvatar')}
-                            source={illustrations.AiBot}
+                            source={avatarSource}
                             onPress={() => {}}
                             size={CONST.AVATAR_SIZE.X_LARGE}
                             avatarStyle={avatarStyle}
