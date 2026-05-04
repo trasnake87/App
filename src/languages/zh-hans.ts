@@ -2652,6 +2652,13 @@ ${amount}，商户：${merchant} - 日期：${date}`,
         newAgent: '新代理人',
         emptyAgents: {title: '尚未创建代理', subtitle: '别再手动处理这些事情了。交给智能代理去执行，为自己节省大量时间。'},
     },
+    newAgentPage: {
+        title: '新代理',
+        agentName: '代理名称',
+        instructions: '编写自定义指令',
+        createAgent: '创建代理',
+        switchAvatar: '切换头像',
+    },
     expenseRulesPage: {
         title: '报销规则',
         findRule: '查找规则',

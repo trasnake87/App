@@ -2720,6 +2720,13 @@ ${amount} para ${merchant} - ${date}`,
         newAgent: 'Novo agente',
         emptyAgents: {title: 'Nenhum agente criado', subtitle: 'Pare de fazer tudo manualmente. Instrua um agente e economize muito tempo.'},
     },
+    newAgentPage: {
+        title: 'Novo agente',
+        agentName: 'Nome do agente',
+        instructions: 'Escrever instruções personalizadas',
+        createAgent: 'Criar agente',
+        switchAvatar: 'Trocar avatar',
+    },
     expenseRulesPage: {
         title: 'Regras de despesas',
         findRule: 'Encontrar regra',

@@ -19,6 +19,7 @@ import NotFoundPage from '@pages/ErrorPage/NotFoundPage';
 import {openAgentsPage} from '@userActions/Agent';
 import CONST from '@src/CONST';
 import ONYXKEYS from '@src/ONYXKEYS';
+import ROUTES from '@src/ROUTES';
 import AgentsListRow from './AgentsListRow';
 
 type AgentItem = {
@@ -79,7 +80,7 @@ function AgentsPage() {
             success
             icon={icons.Plus}
             text={translate('agentsPage.newAgent')}
-            onPress={() => {}}
+            onPress={() => Navigation.navigate(ROUTES.SETTINGS_AGENTS_NEW)}
         />
     );
 

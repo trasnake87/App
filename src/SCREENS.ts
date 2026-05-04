@@ -172,6 +172,7 @@ const SCREENS = {
 
         AGENTS: {
             ROOT: 'Settings_Agents',
+            NEW: 'Settings_Agents_New',
         },
 
         RULES: {

@@ -2727,6 +2727,13 @@ ${amount} voor ${merchant} - ${date}`,
         newAgent: 'Nieuwe medewerker',
         emptyAgents: {title: 'Geen agents aangemaakt', subtitle: 'Stop met dingen handmatig doen. Geef in plaats daarvan een opdracht aan een agent en bespaar jezelf veel tijd.'},
     },
+    newAgentPage: {
+        title: 'Nieuwe agent',
+        agentName: 'Agentnaam',
+        instructions: 'Schrijf aangepaste instructies',
+        createAgent: 'Agent aanmaken',
+        switchAvatar: 'Avatar wijzigen',
+    },
     expenseRulesPage: {
         title: 'Declaratieregels',
         findRule: 'Regel zoeken',

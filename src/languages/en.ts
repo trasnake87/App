@@ -2790,6 +2790,13 @@ const translations = {
             subtitle: 'Stop manually doing stuff. Instruct an agent instead and save yourself lots of time.',
         },
     },
+    newAgentPage: {
+        title: 'New agent',
+        agentName: 'Agent name',
+        instructions: 'Write custom instructions',
+        createAgent: 'Create agent',
+        switchAvatar: 'Switch avatar',
+    },
     expenseRulesPage: {
         title: 'Expense rules',
         subtitle: 'These rules will apply to your expenses.',

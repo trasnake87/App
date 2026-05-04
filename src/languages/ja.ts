@@ -2702,6 +2702,13 @@ ${date} の ${merchant} への ${amount}`,
         newAgent: '新しいエージェント',
         emptyAgents: {title: 'エージェントは作成されていません', subtitle: '手作業はやめて、代わりにエージェントに指示を出して、時間を大幅に節約しましょう。'},
     },
+    newAgentPage: {
+        title: '新しいエージェント',
+        agentName: 'エージェント名',
+        instructions: 'カスタム指示を書く',
+        createAgent: 'エージェントを作成',
+        switchAvatar: 'アバターを変更',
+    },
     expenseRulesPage: {
         title: '経費ルール',
         findRule: 'ルールを検索',

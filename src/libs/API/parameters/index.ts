@@ -520,3 +520,4 @@ export type {default as InitiateBankAccountUnlockParams} from './InitiateBankAcc
 export type {default as UpdateDomainSecurityGroupParams} from './UpdateDomainSecurityGroupParams';
 export type {default as SetDefaultDomainSecurityGroupParams} from './SetDefaultDomainSecurityGroupParams';
 export type {default as DeleteDomainSecurityGroupParams} from './DeleteDomainSecurityGroupParams';
+export type {default as CreateAgentParams} from './CreateAgentParams';
