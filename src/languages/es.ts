@@ -2615,8 +2615,6 @@ ${amount} para ${merchant} - ${date}`,
         title: 'Agentes',
         subtitle: 'Automatiza tareas con agentes personalizados.',
         newAgent: 'Nuevo agente',
-        chat: 'Chat',
-        copilot: 'Co-pilot',
         emptyAgents: {
             title: 'No se han creado agentes.',
             subtitle: 'Deja de hacer las cosas manualmente. En su lugar, instruye a un agente y ahorra mucho tiempo.',

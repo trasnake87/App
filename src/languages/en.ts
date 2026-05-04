@@ -2785,8 +2785,6 @@ const translations = {
         title: 'Agents',
         subtitle: 'Create agents to handle your workflow. Skip the manual work and get hours back in your day.',
         newAgent: 'New agent',
-        chat: 'Chat',
-        copilot: 'Co-pilot',
         emptyAgents: {
             title: 'No agents created',
             subtitle: 'Stop manually doing stuff. Instruct an agent instead and save yourself lots of time.',
