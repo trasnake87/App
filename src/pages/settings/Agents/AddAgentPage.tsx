@@ -1,6 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {View} from 'react-native';
-import {useOnyx} from 'react-native-onyx';
 import AvatarButtonWithIcon from '@components/AvatarButtonWithIcon';
 import FormProvider from '@components/Form/FormProvider';
 import InputWrapper from '@components/Form/InputWrapper';
@@ -12,6 +11,7 @@ import TextInput from '@components/TextInput';
 import useCurrentUserPersonalDetails from '@hooks/useCurrentUserPersonalDetails';
 import {useMemoizedLazyExpensifyIcons} from '@hooks/useLazyAsset';
 import useLocalize from '@hooks/useLocalize';
+import useOnyx from '@hooks/useOnyx';
 import useTheme from '@hooks/useTheme';
 import useThemeStyles from '@hooks/useThemeStyles';
 import Navigation from '@libs/Navigation/Navigation';
@@ -32,7 +32,8 @@ function AddAgentPage() {
     const expensifyIcons = useMemoizedLazyExpensifyIcons(['Sync']);
     const avatarStyle = [styles.avatarXLarge, styles.alignSelfCenter];
     const [avatarSource] = useState(() => botAvatars[Math.floor(Math.random() * botAvatars.length)]);
-    const [formState] = useOnyx(ONYXKEYS.FORMS.ADD_AGENT_FORM);
+    const [formIsLoading] = useOnyx(ONYXKEYS.FORMS.ADD_AGENT_FORM, {selector: (form) => form?.isLoading});
+    const [formErrors] = useOnyx(ONYXKEYS.FORMS.ADD_AGENT_FORM, {selector: (form) => form?.errors});
     const hasSubmittedRef = useRef(false);
 
     useEffect(() => {
@@ -40,11 +41,12 @@ function AddAgentPage() {
     }, []);
 
     useEffect(() => {
-        if (hasSubmittedRef.current && !formState?.isLoading && !formState?.errors) {
-            Navigation.goBack();
-            hasSubmittedRef.current = false;
+        if (!hasSubmittedRef.current || formIsLoading || formErrors) {
+            return;
         }
-    }, [formState]);
+        Navigation.goBack();
+        hasSubmittedRef.current = false;
+    }, [formIsLoading, formErrors]);
 
     const validate = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.ADD_AGENT_FORM>): Errors => {
         const errors: Errors = {};
