@@ -64,20 +64,20 @@ function AddAgentPage() {
                 submitFlexEnabled={false}
                 enabledWhenOffline
             >
-                <View style={[styles.alignItemsCenter, styles.mt5, styles.mb4]}>
-                    <AvatarButtonWithIcon
-                        text={translate('addAgentPage.switchAvatar')}
-                        source={illustrations.AiBot}
-                        onPress={() => {}}
-                        size={CONST.AVATAR_SIZE.X_LARGE}
-                        avatarStyle={avatarStyle}
-                        editIcon={expensifyIcons.Sync}
-                        editIconStyle={styles.smallEditIconAgent}
-                        editIconFill={theme.textLight}
-                        sentryLabel={CONST.SENTRY_LABEL.ADD_AGENT_PAGE.AVATAR}
-                    />
-                </View>
-                <View style={styles.mb4}>
+                <View style={[styles.flex1, styles.flexColumn, styles.gap5]}>
+                    <View style={[styles.alignItemsCenter]}>
+                        <AvatarButtonWithIcon
+                            text={translate('addAgentPage.switchAvatar')}
+                            source={illustrations.AiBot}
+                            onPress={() => {}}
+                            size={CONST.AVATAR_SIZE.X_LARGE}
+                            avatarStyle={avatarStyle}
+                            editIcon={expensifyIcons.Sync}
+                            editIconStyle={styles.smallEditIconAgent}
+                            editIconFill={theme.textLight}
+                            sentryLabel={CONST.SENTRY_LABEL.ADD_AGENT_PAGE.AVATAR}
+                        />
+                    </View>
                     <InputWrapper
                         InputComponent={TextInput}
                         inputID={INPUT_IDS.FIRST_NAME}
@@ -88,21 +88,21 @@ function AddAgentPage() {
                         spellCheck={false}
                         defaultValue={defaultAgentName}
                     />
-                </View>
-                <View style={[styles.flex1, styles.mb4]}>
-                    <InputWrapper
-                        InputComponent={TextInput}
-                        inputID={INPUT_IDS.PROMPT}
-                        label={translate('addAgentPage.instructions')}
-                        accessibilityLabel={translate('addAgentPage.instructions')}
-                        role={CONST.ROLE.PRESENTATION}
-                        defaultValue={defaultPrompt}
-                        multiline
-                        containerStyles={[styles.flex1]}
-                        touchableInputWrapperStyle={[styles.flex1]}
-                        textInputContainerStyles={[styles.flex1]}
-                        inputStyle={[styles.flex1]}
-                    />
+                    <View style={[styles.flex1]}>
+                        <InputWrapper
+                            InputComponent={TextInput}
+                            inputID={INPUT_IDS.PROMPT}
+                            label={translate('addAgentPage.instructions')}
+                            accessibilityLabel={translate('addAgentPage.instructions')}
+                            role={CONST.ROLE.PRESENTATION}
+                            defaultValue={defaultPrompt}
+                            multiline
+                            containerStyles={[styles.flex1]}
+                            touchableInputWrapperStyle={[styles.flex1]}
+                            textInputContainerStyles={[styles.flex1]}
+                            inputStyle={[styles.flex1]}
+                        />
+                    </View>
                 </View>
             </FormProvider>
         </ScreenWrapper>
