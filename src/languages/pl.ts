@@ -2726,9 +2726,9 @@ ${amount} dla ${merchant} - ${date}`,
         instructions: 'Napisz własne instrukcje',
         createAgent: 'Utwórz agenta',
         switchAvatar: 'Zmień awatar',
-        defaultAgentName: (displayName: string) => `Agent użytkownika ${displayName}`,
+        defaultAgentName: (displayName: string) => `Agent ${displayName}`,
         defaultPrompt:
-            'Odrzucaj wydatki na hazard, filmy lub inne oczywiste powody niezwiązane z działalnością.\n\nPrzypominaj użytkownikowi o dołączeniu zdjęcia paragonu, na którym wyraźnie widać napiwek.\n\nZatwierdź raport, jeśli jest bardzo podobny do poprzednich raportów tego samego użytkownika.\n\nOdrzucaj raporty z wydatkami na podróże przekraczającymi 500 $.',
+            'Odrzucaj wydatki związane z hazardem, filmami lub innymi oczywistymi celami niezwiązanymi z działalnością biznesową.\n\nPrzypominaj użytkownikowi, aby zawsze dołączał zdjęcie paragonu, na którym wysokość napiwku jest wyraźnie widoczna.\n\nZatwierdź raport, jeśli jest bardzo podobny do wcześniejszych raportów tego samego użytkownika.\n\nOdrzucaj raporty zawierające więcej niż 500 USD wydatków na podróże.',
     },
     expenseRulesPage: {
         title: 'Reguły wydatków',

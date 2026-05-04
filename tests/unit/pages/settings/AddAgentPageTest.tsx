@@ -7,7 +7,7 @@ jest.mock('@userActions/Agent', () => ({
     createAgent: jest.fn(),
 }));
 
-const mockTranslate = jest.fn().mockImplementation((key: string, param?: unknown) => (param !== undefined ? `${key}(${param})` : key));
+const mockTranslate = jest.fn().mockImplementation((key: string, param?: string) => (param !== undefined ? `${key}(${param})` : key));
 
 jest.mock('@hooks/useLocalize', () => jest.fn(() => ({translate: mockTranslate})));
 

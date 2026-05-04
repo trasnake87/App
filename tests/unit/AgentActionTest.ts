@@ -21,7 +21,7 @@ function getOptimisticAccountID(optimisticData: AnyOnyxUpdate[]): string {
     if (!personalDetailUpdate?.value || typeof personalDetailUpdate.value !== 'object') {
         throw new Error('No personal detail update in optimisticData');
     }
-    return Object.keys(personalDetailUpdate.value).at(0) ?? '';
+    return Object.keys(personalDetailUpdate.value as Record<string, unknown>).at(0) ?? '';
 }
 
 describe('createAgent', () => {

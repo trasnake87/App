@@ -2736,13 +2736,13 @@ ${amount} für ${merchant} – ${date}`,
     },
     addAgentPage: {
         title: 'Neue Kontaktperson',
-        agentName: 'Name des Agenten',
+        agentName: 'Name der Ansprechperson',
         instructions: 'Eigene Anweisungen schreiben',
         createAgent: 'Agent erstellen',
-        switchAvatar: 'Avatar wechseln',
-        defaultAgentName: (displayName: string) => `Agent von ${displayName}`,
+        switchAvatar: 'Profilbild wechseln',
+        defaultAgentName: (displayName: string) => `Agent*in von ${displayName}`,
         defaultPrompt:
-            'Ausgaben für Glücksspiele, Kinobesuche oder andere offensichtlich nicht geschäftliche Zwecke ablehnen.\n\nDen Benutzer immer daran erinnern, ein Belegbild beizufügen, das das Trinkgeld deutlich zeigt.\n\nDen Bericht genehmigen, wenn er früheren Berichten desselben Benutzers sehr ähnelt.\n\nBerichte mit mehr als 500 $ an Reiseausgaben ablehnen.',
+            'Lehne Ausgaben ab, die für Glücksspiele, Kinobesuche oder andere offensichtlich nicht geschäftliche Zwecke sind.\n\nErinnere den:die Nutzer:in daran, immer ein Belegfoto beizufügen, auf dem das Trinkgeld klar erkennbar ist.\n\nGenehmige den Bericht, wenn er früheren Berichten derselben Person sehr ähnlich ist.\n\nLehne Berichte mit mehr als 500 $ an Reisekosten ab.',
     },
     expenseRulesPage: {
         title: 'Ausgabenregeln',

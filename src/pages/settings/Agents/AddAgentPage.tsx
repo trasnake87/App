@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {View} from 'react-native';
 import AvatarButtonWithIcon from '@components/AvatarButtonWithIcon';
 import FormProvider from '@components/Form/FormProvider';
@@ -29,7 +29,7 @@ function AddAgentPage() {
     const defaultPrompt = translate('addAgentPage.defaultPrompt');
     const expensifyIcons = useMemoizedLazyExpensifyIcons(['Sync']);
     const avatarStyle = [styles.avatarXLarge, styles.alignSelfCenter];
-    const avatarSource = botAvatars[Math.floor(Math.random() * botAvatars.length)];
+    const [avatarSource] = useState(() => botAvatars[Math.floor(Math.random() * botAvatars.length)]);
 
     const validate = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.ADD_AGENT_FORM>): Errors => {
         const errors: Errors = {};
