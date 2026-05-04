@@ -86,6 +86,35 @@ describe('createAgent', () => {
         expect(promptUpdate?.value).toEqual({prompt: 'My prompt'});
     });
 
+    it('optimistic data sets form isLoading and clears errors', () => {
+        createAgent('Bot', 'My prompt');
+
+        const {optimisticData} = getWriteOptions();
+        const formUpdate = optimisticData.find((u) => u.key === ONYXKEYS.FORMS.ADD_AGENT_FORM);
+
+        expect(formUpdate?.value).toMatchObject({isLoading: true, errors: null});
+    });
+
+    it('success data clears form isLoading', () => {
+        createAgent('Bot', 'My prompt');
+
+        const {successData} = getWriteOptions();
+        const formUpdate = successData.find((u) => u.key === ONYXKEYS.FORMS.ADD_AGENT_FORM);
+
+        expect(formUpdate?.value).toMatchObject({isLoading: false});
+    });
+
+    it('failure data sets form error and clears isLoading', () => {
+        createAgent('Bot', 'My prompt');
+
+        const {failureData} = getWriteOptions();
+        const formUpdate = failureData.find((u) => u.key === ONYXKEYS.FORMS.ADD_AGENT_FORM);
+        const value = formUpdate?.value as Record<string, unknown> | undefined;
+
+        expect(value?.isLoading).toBe(false);
+        expect(value?.errors).toBeTruthy();
+    });
+
     it('success data nulls out both optimistic entries', () => {
         createAgent('Bot', 'My prompt');
 

@@ -1,6 +1,7 @@
 import Onyx from 'react-native-onyx';
 import {read, write} from '@libs/API';
 import {READ_COMMANDS, WRITE_COMMANDS} from '@libs/API/types';
+import {getMicroSecondOnyxErrorWithTranslationKey} from '@libs/ErrorUtils';
 import ONYXKEYS from '@src/ONYXKEYS';
 import type {AnyOnyxUpdate} from '@src/types/onyx/Request';
 
@@ -12,6 +13,11 @@ function createAgent(firstName: string | undefined, prompt: string) {
     const optimisticAccountID = -Math.round(Math.random() * 1000000);
 
     const optimisticData: AnyOnyxUpdate[] = [
+        {
+            onyxMethod: Onyx.METHOD.MERGE,
+            key: ONYXKEYS.FORMS.ADD_AGENT_FORM,
+            value: {isLoading: true, errors: null},
+        },
         {
             onyxMethod: Onyx.METHOD.MERGE,
             key: ONYXKEYS.PERSONAL_DETAILS_LIST,
@@ -33,6 +39,11 @@ function createAgent(firstName: string | undefined, prompt: string) {
     const successData: AnyOnyxUpdate[] = [
         {
             onyxMethod: Onyx.METHOD.MERGE,
+            key: ONYXKEYS.FORMS.ADD_AGENT_FORM,
+            value: {isLoading: false},
+        },
+        {
+            onyxMethod: Onyx.METHOD.MERGE,
             key: ONYXKEYS.PERSONAL_DETAILS_LIST,
             value: {
                 [optimisticAccountID]: null,
@@ -46,6 +57,11 @@ function createAgent(firstName: string | undefined, prompt: string) {
     ];
 
     const failureData: AnyOnyxUpdate[] = [
+        {
+            onyxMethod: Onyx.METHOD.MERGE,
+            key: ONYXKEYS.FORMS.ADD_AGENT_FORM,
+            value: {isLoading: false, errors: getMicroSecondOnyxErrorWithTranslationKey('common.genericErrorMessage')},
+        },
         {
             onyxMethod: Onyx.METHOD.MERGE,
             key: ONYXKEYS.PERSONAL_DETAILS_LIST,

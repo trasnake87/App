@@ -1,5 +1,6 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {View} from 'react-native';
+import {useOnyx} from 'react-native-onyx';
 import AvatarButtonWithIcon from '@components/AvatarButtonWithIcon';
 import FormProvider from '@components/Form/FormProvider';
 import InputWrapper from '@components/Form/InputWrapper';
@@ -30,6 +31,15 @@ function AddAgentPage() {
     const expensifyIcons = useMemoizedLazyExpensifyIcons(['Sync']);
     const avatarStyle = [styles.avatarXLarge, styles.alignSelfCenter];
     const [avatarSource] = useState(() => botAvatars[Math.floor(Math.random() * botAvatars.length)]);
+    const [formState] = useOnyx(ONYXKEYS.FORMS.ADD_AGENT_FORM);
+    const hasSubmittedRef = useRef(false);
+
+    useEffect(() => {
+        if (hasSubmittedRef.current && !formState?.isLoading && !formState?.errors) {
+            Navigation.goBack();
+            hasSubmittedRef.current = false;
+        }
+    }, [formState]);
 
     const validate = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.ADD_AGENT_FORM>): Errors => {
         const errors: Errors = {};
@@ -40,9 +50,9 @@ function AddAgentPage() {
     };
 
     const handleSubmit = (values: FormOnyxValues<typeof ONYXKEYS.FORMS.ADD_AGENT_FORM>) => {
+        hasSubmittedRef.current = true;
         const firstName = values[INPUT_IDS.FIRST_NAME].trim() || undefined;
         createAgent(firstName, values[INPUT_IDS.PROMPT].trim());
-        Navigation.goBack();
     };
 
     return (
