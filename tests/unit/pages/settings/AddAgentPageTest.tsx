@@ -87,7 +87,7 @@ const mockUseCurrentUserPersonalDetails = jest.mocked(useCurrentUserPersonalDeta
 describe('AddAgentPage', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockUseCurrentUserPersonalDetails.mockReturnValue({});
+        mockUseCurrentUserPersonalDetails.mockReturnValue({accountID: 0});
     });
 
     it('renders page title', () => {
@@ -97,7 +97,7 @@ describe('AddAgentPage', () => {
     });
 
     it('translates default agent name using current user displayName', () => {
-        mockUseCurrentUserPersonalDetails.mockReturnValue({displayName: 'Nicolas'});
+        mockUseCurrentUserPersonalDetails.mockReturnValue({accountID: 0, displayName: 'Nicolas'});
 
         render(<AddAgentPage />);
 
@@ -105,7 +105,7 @@ describe('AddAgentPage', () => {
     });
 
     it('sets default agent name as InputWrapper defaultValue when displayName exists', () => {
-        mockUseCurrentUserPersonalDetails.mockReturnValue({displayName: 'Nicolas'});
+        mockUseCurrentUserPersonalDetails.mockReturnValue({accountID: 0, displayName: 'Nicolas'});
 
         const {toJSON} = render(<AddAgentPage />);
 
@@ -113,7 +113,7 @@ describe('AddAgentPage', () => {
     });
 
     it('sets no default agent name when displayName is absent', () => {
-        mockUseCurrentUserPersonalDetails.mockReturnValue({});
+        mockUseCurrentUserPersonalDetails.mockReturnValue({accountID: 0});
 
         const {toJSON} = render(<AddAgentPage />);
 
