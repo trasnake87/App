@@ -16,6 +16,7 @@ import useTheme from '@hooks/useTheme';
 import useThemeStyles from '@hooks/useThemeStyles';
 import Navigation from '@libs/Navigation/Navigation';
 import {createAgent} from '@userActions/Agent';
+import {clearErrors} from '@userActions/FormActions';
 import CONST from '@src/CONST';
 import ONYXKEYS from '@src/ONYXKEYS';
 import INPUT_IDS from '@src/types/form/AddAgentForm';
@@ -33,6 +34,10 @@ function AddAgentPage() {
     const [avatarSource] = useState(() => botAvatars[Math.floor(Math.random() * botAvatars.length)]);
     const [formState] = useOnyx(ONYXKEYS.FORMS.ADD_AGENT_FORM);
     const hasSubmittedRef = useRef(false);
+
+    useEffect(() => {
+        clearErrors(ONYXKEYS.FORMS.ADD_AGENT_FORM);
+    }, []);
 
     useEffect(() => {
         if (hasSubmittedRef.current && !formState?.isLoading && !formState?.errors) {
