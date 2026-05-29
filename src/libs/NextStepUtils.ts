@@ -363,7 +363,7 @@ function getReportNextStep(
     transactionViolations: OnyxCollection<TransactionViolations>,
     currentUserEmail: string,
     currentUserAccountID: number,
-) {
+): ReportNextStep | ReportNextStepDeprecated | null | undefined {
     const {reimbursableSpend} = getMoneyRequestSpendBreakdown(moneyRequestReport);
     const shouldShowNoFurtherAction =
         reimbursableSpend === 0 &&
@@ -400,7 +400,11 @@ function getReportNextStep(
         });
     }
 
-    return currentNextStep;
+    // The server keeps `report.nextStep` (new ReportNextStep format) in sync with `statusNum`
+    // for every client via the report push, but the deprecated `reportNextStep_*` collection
+    // is only refreshed for the local actor. Prefer the report-embedded value so non-actor
+    // viewers (e.g. submitter watching an approver approve) see real-time updates.
+    return moneyRequestReport?.nextStep ?? currentNextStep;
 }
 function buildOptimisticNextStepForDynamicExternalWorkflowSubmitError(iconFill?: string) {
     const optimisticNextStep: ReportNextStepDeprecated = {
