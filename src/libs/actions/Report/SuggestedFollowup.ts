@@ -3,6 +3,7 @@ import Onyx from 'react-native-onyx';
 import Log from '@libs/Log';
 import {rand64} from '@libs/NumberUtils';
 import type {Followup} from '@libs/ReportActionFollowupUtils';
+import {getReportAction} from '@libs/ReportActionsUtils';
 import type {Ancestor, OptimisticReportAction} from '@libs/ReportUtils';
 import {buildOptimisticAddCommentReportAction} from '@libs/ReportUtils';
 import CONST from '@src/CONST';
@@ -159,6 +160,16 @@ function hidePendingFollowupList(reportID: string | undefined, hidden: boolean |
  * and clearing the pending state.
  */
 function applyPendingConciergeAction(reportID: string | undefined, reportAction: ReportAction) {
+    // The server's canonical reply reuses this optimisticConciergeReportActionID (see addComment's
+    // pregeneratedResponseParams in Report/index.ts) and arrives carrying the next <followup-list>.
+    // If it already landed during the displayAfter delay, re-merging our older optimistic HTML would
+    // overwrite those options and re-arm the followup skeleton until the TTL. getReportAction reads
+    // the live REPORT_ACTIONS cache synchronously (updated by Onyx.connect ahead of any render), so
+    // this guard is race-free and covers both the binary and trickle reveal paths.
+    if (getReportAction(reportID, reportAction.reportActionID)) {
+        discardPendingConciergeAction(reportID);
+        return;
+    }
     Onyx.update([
         {
             onyxMethod: Onyx.METHOD.SET,
