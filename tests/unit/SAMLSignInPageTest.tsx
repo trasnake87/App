@@ -97,4 +97,29 @@ describe('SAMLSignInPage (native)', () => {
         // After the user cancels, the guard must be cleared (otherwise reauthenticate stays blocked forever)
         expect(guard).toBe(false);
     });
+
+    test('clears the guard when the callback returns success but with no json token (early-return path)', async () => {
+        let guard: OnyxEntry<boolean>;
+        Onyx.connect({
+            key: ONYXKEYS.RAM_ONLY_IS_AUTHENTICATING_WITH_SHORT_LIVED_TOKEN,
+            callback: (value) => {
+                guard = value;
+            },
+        });
+        // The browser returns to the loginCallback URL but without the expected `json` parameter, so
+        // handleNavigationStateChange hits the no-token early return. The guard must still be cleared there,
+        // otherwise it stays set, every later reauthenticate() keeps aborting, and the back button is hidden.
+        mockedOpenAuthSessionAsync.mockResolvedValueOnce({type: 'success', url: 'https://www.expensify.com/transition?loginCallback=true'});
+        await setCredentials();
+
+        render(
+            <OnyxListItemProvider>
+                <SAMLSignInPage />
+            </OnyxListItemProvider>,
+        );
+        await waitForBatchedUpdatesWithAct();
+
+        expect(mockedOpenAuthSessionAsync).toHaveBeenCalledTimes(1);
+        expect(guard).toBe(false);
+    });
 });
