@@ -53,9 +53,9 @@
 
 ### [react-native+0.83.1+008+iOSCoreAnimationBorderRendering.patch](react-native+0.83.1+008+iOSCoreAnimationBorderRendering.patch)
 
-- Reason: Fixes border rendering issues with Core Animation on iOS
+- Reason: Suppresses implicit Core Animation animations during the Fabric mount so that the standalone `CALayer` instances Fabric uses to render borders/backgrounds (`_backgroundColorLayer`, `_borderLayer`, `_outlineLayer`, etc. in `RCTViewComponentView.mm`) do not flicker on mount. The patch sets `[CATransaction setDisableActions:YES]` for the duration of `performTransaction:` and restores the previous value afterwards, instead of opening its own `[CATransaction begin]`/`commit` pair. The `begin`/`commit` wrapper forced a synchronous full-tree Core Animation flush inside the mount (the outermost transaction commit does not defer to the run-loop) which recursively walked the combined OldDot+NewDot layer tree in `CA::Layer::collect_animations_` and blocked the main thread past the 2s AppHang threshold on iOS HybridApp (Sentry APP-8K6). `setDisableActions:` toggles the flag on the already-current implicit transaction, so implicit-animation suppression is preserved for every layer touched during the mount while the render-server commit coalesces back to Core Animation's normal end-of-run-loop point.
 - Upstream PR/issue: 🛑
-- E/App issue: 🛑
+- E/App issue: https://github.com/Expensify/App/issues/95194
 - PR Introducing Patch: 🛑
 
 ### [react-native+0.83.1+009+copyStateOnClone.patch](react-native+0.83.1+009+copyStateOnClone.patch)
