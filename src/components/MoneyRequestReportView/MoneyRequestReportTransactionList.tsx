@@ -941,7 +941,12 @@ function MoneyRequestReportTransactionList({
                             if (!isSortableColumnName(selectedSortBy)) {
                                 return;
                             }
-                            setSortConfig((prevState) => ({...prevState, sortBy: selectedSortBy, sortOrder: selectedSortOrder}));
+                            // SortableHeaderText always emits DESC when switching to a non-active column. For this view the Date
+                            // column's default is ASC (chronological), and restoring it also re-enables the RBR-first ordering
+                            // guarded by `isDefaultSort`.
+                            const isSwitchingColumn = selectedSortBy !== sortBy;
+                            const nextSortOrder = isSwitchingColumn && selectedSortBy === CONST.SEARCH.TABLE_COLUMNS.DATE ? CONST.SEARCH.SORT_ORDER.ASC : selectedSortOrder;
+                            setSortConfig((prevState) => ({...prevState, sortBy: selectedSortBy, sortOrder: nextSortOrder}));
                         }}
                     />
                 )}
