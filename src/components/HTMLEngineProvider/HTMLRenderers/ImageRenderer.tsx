@@ -1,4 +1,5 @@
 import {AttachmentContext} from '@components/AttachmentContext';
+import {AttachmentIDContextProvider} from '@components/Attachments/AttachmentIDContext';
 import {getButtonRole} from '@components/Button/utils';
 import {isDeletedNode} from '@components/HTMLEngineProvider/htmlEngineUtils';
 import PressableWithoutFocus from '@components/Pressable/PressableWithoutFocus';
@@ -82,6 +83,7 @@ function ImageRenderer({tnode}: CustomRendererProps<TBlock>) {
     }
 
     const thumbnailImageComponent = (
+        <AttachmentIDContextProvider attachmentID={attachmentID}>
         <ThumbnailImage
             previewSourceURL={cachedPreviewSource ?? processedPreviewSource}
             style={styles.webViewStyles.tagStyles.img}
@@ -94,6 +96,7 @@ function ImageRenderer({tnode}: CustomRendererProps<TBlock>) {
             fallbackIconBackground={theme.highlightBG}
             fallbackIconColor={theme.border}
         />
+        </AttachmentIDContextProvider>
     );
 
     const {anchor, report, action, isDisabled, shouldDisplayContextMenu, originalReportID} = useShowContextMenuState();
