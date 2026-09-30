@@ -25,8 +25,9 @@ type AccountHolderDetails = {
  */
 function getSavedAccountHolderDetails(privatePersonalDetails: OnyxEntry<PrivatePersonalDetails>): AccountHolderDetails {
     const address = getCurrentAddress(privatePersonalDetails);
-    // Older addresses can store the country name instead of its code
-    const usAddress = getCountryCode(address?.country) === CONST.COUNTRY.US ? address : undefined;
+    // Like BankAccountUtils, an address saved without a country counts as a US one, and older addresses can store the
+    // country name instead of its code
+    const usAddress = !address?.country || getCountryCode(address.country) === CONST.COUNTRY.US ? address : undefined;
     const [street1, street2] = getStreetLines(usAddress?.street);
 
     return {
@@ -42,8 +43,8 @@ function getSavedAccountHolderDetails(privatePersonalDetails: OnyxEntry<PrivateP
 }
 
 /**
- * The name and address to send with the bank account: what was entered in the flow, and the saved profile values for
- * the pages that were skipped because the profile already had them.
+ * Builds the AddPersonalBankAccount name and address one field at a time. A field typed on this flow's legal name or
+ * address page is used as typed; any other field comes from the profile, the same as for a page that was skipped.
  */
 function getAccountHolderDetails(privatePersonalDetails: OnyxEntry<PrivatePersonalDetails>, draft: OnyxEntry<Partial<PersonalBankAccountForm>>): AccountHolderDetails {
     const savedDetails = getSavedAccountHolderDetails(privatePersonalDetails);

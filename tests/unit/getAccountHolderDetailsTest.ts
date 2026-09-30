@@ -3,7 +3,7 @@ import getAccountHolderDetails, {getSavedAccountHolderDetails, isAddressComplete
 import type {Country} from '@src/CONST';
 import type {PrivatePersonalDetails} from '@src/types/onyx';
 
-const US_PROFILE: PrivatePersonalDetails = {
+const SAVED_PROFILE: PrivatePersonalDetails = {
     legalFirstName: 'Rosa',
     legalLastName: 'Alvarez',
     addresses: [
@@ -15,7 +15,7 @@ const US_PROFILE: PrivatePersonalDetails = {
 describe('getAccountHolderDetails', () => {
     describe('getSavedAccountHolderDetails', () => {
         it('returns the legal name and the current US address split into the bank account fields', () => {
-            expect(getSavedAccountHolderDetails(US_PROFILE)).toEqual({
+            expect(getSavedAccountHolderDetails(SAVED_PROFILE)).toEqual({
                 legalFirstName: 'Rosa',
                 legalLastName: 'Alvarez',
                 addressStreet: '350 Fifth Avenue',
@@ -36,6 +36,15 @@ describe('getAccountHolderDetails', () => {
 
             expect(details.addressStreet).toBe('350 Fifth Avenue');
             expect(details.addressStreet2).toBe('Floor 5');
+            expect(details.addressZipCode).toBe('10118');
+        });
+
+        it('treats an address saved without a country as a US one', () => {
+            const details = getSavedAccountHolderDetails({addresses: [{street: '350 Fifth Avenue', city: 'New York', state: 'NY', zip: '10118', current: true}]});
+
+            expect(details.addressStreet).toBe('350 Fifth Avenue');
+            expect(details.addressCity).toBe('New York');
+            expect(details.addressState).toBe('NY');
             expect(details.addressZipCode).toBe('10118');
         });
 
@@ -71,11 +80,11 @@ describe('getAccountHolderDetails', () => {
     });
 
     it('sends the saved profile values for the pages that were skipped', () => {
-        expect(getAccountHolderDetails(US_PROFILE, {setupType: 'plaid'})).toEqual(getSavedAccountHolderDetails(US_PROFILE));
+        expect(getAccountHolderDetails(SAVED_PROFILE, {setupType: 'plaid'})).toEqual(getSavedAccountHolderDetails(SAVED_PROFILE));
     });
 
     it('prefers the values entered in the flow over the saved ones', () => {
-        const details = getAccountHolderDetails(US_PROFILE, {
+        const details = getAccountHolderDetails(SAVED_PROFILE, {
             legalFirstName: 'Rosalind',
             legalLastName: 'Smith',
             addressStreet: '77 Harbor Way',
@@ -97,7 +106,7 @@ describe('getAccountHolderDetails', () => {
     });
 
     it('keeps the saved unit when the street itself was not changed', () => {
-        const details = getAccountHolderDetails(US_PROFILE, {addressStreet: '350 Fifth Avenue', addressCity: 'New York', addressState: 'NY', addressZipCode: '10001'});
+        const details = getAccountHolderDetails(SAVED_PROFILE, {addressStreet: '350 Fifth Avenue', addressCity: 'New York', addressState: 'NY', addressZipCode: '10001'});
 
         expect(details.addressStreet2).toBe('Floor 5');
         expect(details.addressZipCode).toBe('10001');
