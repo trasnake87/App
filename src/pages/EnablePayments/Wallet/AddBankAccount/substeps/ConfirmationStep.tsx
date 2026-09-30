@@ -12,6 +12,7 @@ import useThemeStyles from '@hooks/useThemeStyles';
 
 import {getLatestErrorMessage} from '@libs/ErrorUtils';
 
+import getAccountHolderDetails, {isAddressComplete, isLegalNameComplete} from '@pages/EnablePayments/Wallet/utils/getAccountHolderDetails';
 import useIsBankAccountAdded from '@pages/EnablePayments/Wallet/utils/useIsBankAccountAdded';
 
 import CONST from '@src/CONST';
@@ -32,6 +33,7 @@ function ConfirmationStep({onNext, onMove}: ConfirmationStepProps) {
     const {isOffline} = useNetwork();
     const [personalBankAccountDraft] = useOnyx(ONYXKEYS.FORMS.PERSONAL_BANK_ACCOUNT_FORM_DRAFT);
     const [personalBankAccount] = useOnyx(ONYXKEYS.PERSONAL_BANK_ACCOUNT);
+    const [privatePersonalDetails] = useOnyx(ONYXKEYS.PRIVATE_PERSONAL_DETAILS);
     const {isBankAccountAdded, addedBankAccount} = useIsBankAccountAdded();
 
     const isLoading = personalBankAccount?.isLoading ?? false;
@@ -40,8 +42,24 @@ function ConfirmationStep({onNext, onMove}: ConfirmationStepProps) {
     const bankName = personalBankAccountDraft?.[BANK_INFO_STEP_KEYS.BANK_NAME] ?? addedBankAccount?.title;
     const accountNumber = personalBankAccountDraft?.[BANK_INFO_STEP_KEYS.ACCOUNT_NUMBER] ?? addedBankAccount?.accountData?.accountNumber ?? '';
 
+    const accountHolderDetails = getAccountHolderDetails(privatePersonalDetails, personalBankAccountDraft);
+    const accountHolderAddress = [accountHolderDetails.addressStreet, accountHolderDetails.addressStreet2, accountHolderDetails.addressCity].filter(Boolean).join(', ');
+
     const handleModifyAccountNumbers = () => {
         onMove(BANK_INFO_STEP_INDEXES.ACCOUNT_NUMBERS);
+    };
+
+    const confirm = () => {
+        // The bank account is created with its owner's name and address, so send the user to whichever is still missing
+        if (!isBankAccountAdded && !isLegalNameComplete(accountHolderDetails)) {
+            onMove(BANK_INFO_STEP_INDEXES.LEGAL_NAME);
+            return;
+        }
+        if (!isBankAccountAdded && !isAddressComplete(accountHolderDetails)) {
+            onMove(BANK_INFO_STEP_INDEXES.ADDRESS);
+            return;
+        }
+        onNext();
     };
 
     return (
@@ -65,6 +83,32 @@ function ConfirmationStep({onNext, onMove}: ConfirmationStepProps) {
                     )}
                 </MenuItem.Row>
             </MenuItem.Root>
+            {!isBankAccountAdded && (
+                <>
+                    <MenuItem.Root onPress={() => onMove(BANK_INFO_STEP_INDEXES.LEGAL_NAME)}>
+                        <MenuItem.Row>
+                            <MenuItem.Content>
+                                <MenuItem.FieldName>{translate('personalInfoStep.legalName')}</MenuItem.FieldName>
+                                <MenuItem.FieldValue>{`${accountHolderDetails.legalFirstName} ${accountHolderDetails.legalLastName}`}</MenuItem.FieldValue>
+                            </MenuItem.Content>
+                            <MenuItem.Trailing>
+                                <MenuItem.Chevron />
+                            </MenuItem.Trailing>
+                        </MenuItem.Row>
+                    </MenuItem.Root>
+                    <MenuItem.Root onPress={() => onMove(BANK_INFO_STEP_INDEXES.ADDRESS)}>
+                        <MenuItem.Row>
+                            <MenuItem.Content>
+                                <MenuItem.FieldName>{translate('personalInfoStep.address')}</MenuItem.FieldName>
+                                <MenuItem.FieldValue>{`${accountHolderAddress}, ${accountHolderDetails.addressState} ${accountHolderDetails.addressZipCode}`}</MenuItem.FieldValue>
+                            </MenuItem.Content>
+                            <MenuItem.Trailing>
+                                <MenuItem.Chevron />
+                            </MenuItem.Trailing>
+                        </MenuItem.Row>
+                    </MenuItem.Root>
+                </>
+            )}
             <View style={[styles.ph5, styles.pb5, styles.flexGrow1, styles.justifyContentEnd]}>
                 {!!error && error.length > 0 && (
                     <DotIndicatorMessage
@@ -79,7 +123,7 @@ function ConfirmationStep({onNext, onMove}: ConfirmationStepProps) {
                     variant={CONST.BUTTON_VARIANT.SUCCESS}
                     size={CONST.BUTTON_SIZE.LARGE}
                     style={[styles.w100]}
-                    onPress={onNext}
+                    onPress={confirm}
                 >
                     <Button.Text>{translate('common.confirm')}</Button.Text>
                 </Button>
