@@ -1,6 +1,15 @@
-import getAccountHolderDetails, {getSavedAccountHolderDetails, isAddressComplete, isLegalNameComplete} from '@pages/EnablePayments/Wallet/utils/getAccountHolderDetails';
+import getWalletPersonalDetailsParams from '@pages/EnablePayments/shared/getWalletPersonalDetailsParams';
+import getAccountHolderDetails, {
+    getPersonalInfoValuesFromProfile,
+    getSavedAccountHolderDetails,
+    getWalletPersonalInfoValues,
+    isAddressComplete,
+    isLegalNameComplete,
+} from '@pages/EnablePayments/Wallet/utils/getAccountHolderDetails';
+import getSubstepValues from '@pages/EnablePayments/Wallet/utils/getSubstepValues';
 
 import type {Country} from '@src/CONST';
+import INPUT_IDS from '@src/types/form/WalletAdditionalDetailsForm';
 import type {PrivatePersonalDetails} from '@src/types/onyx';
 
 const SAVED_PROFILE: PrivatePersonalDetails = {
@@ -117,6 +126,80 @@ describe('getAccountHolderDetails', () => {
 
         expect(details.legalFirstName).toBe('Rosa');
         expect(details.legalLastName).toBe('Alvarez');
+    });
+
+    it('writes the details the way the personal info form holds them, with the unit on the street line', () => {
+        expect(getWalletPersonalInfoValues(getSavedAccountHolderDetails(SAVED_PROFILE))).toEqual({
+            legalFirstName: 'Rosa',
+            legalLastName: 'Alvarez',
+            addressStreet: '350 Fifth Avenue, Floor 5',
+            addressCity: 'New York',
+            addressState: 'NY',
+            addressZipCode: '10118',
+        });
+    });
+
+    describe('getPersonalInfoValuesFromProfile', () => {
+        // What the personal info step starts with in a new session: no draft, and no name or address from the server
+        const newSessionValues = getSubstepValues(INPUT_IDS.PERSONAL_INFO_STEP, undefined, undefined);
+
+        it('takes the name and the address from the profile when the personal info step has neither', () => {
+            expect(getPersonalInfoValuesFromProfile(newSessionValues, SAVED_PROFILE)).toEqual({
+                legalFirstName: 'Rosa',
+                legalLastName: 'Alvarez',
+                addressStreet: '350 Fifth Avenue, Floor 5',
+                addressCity: 'New York',
+                addressState: 'NY',
+                addressZipCode: '10118',
+            });
+        });
+
+        it('keeps a name and an address the personal info step already has', () => {
+            const values = {
+                ...newSessionValues,
+                legalFirstName: 'Rosalind',
+                legalLastName: 'Smith',
+                addressStreet: '77 Harbor Way',
+                addressCity: 'Portland',
+                addressState: 'OR',
+                addressZipCode: '97205',
+            };
+
+            expect(getPersonalInfoValuesFromProfile(values, SAVED_PROFILE)).toEqual({});
+        });
+
+        it('replaces a partly filled name as a whole instead of mixing it with the profile', () => {
+            expect(getPersonalInfoValuesFromProfile({...newSessionValues, legalFirstName: 'Rosalind'}, SAVED_PROFILE)).toMatchObject({legalFirstName: 'Rosa', legalLastName: 'Alvarez'});
+        });
+
+        it('leaves out a profile address the wallet cannot use', () => {
+            const incompleteAddress = getPersonalInfoValuesFromProfile(newSessionValues, {
+                legalFirstName: 'Rosa',
+                legalLastName: 'Alvarez',
+                addresses: [{street: '350 Fifth Avenue', city: 'New York', state: 'NY', zip: '', country: 'US', current: true}],
+            });
+            const foreignAddress = getPersonalInfoValuesFromProfile(newSessionValues, {
+                legalFirstName: 'Rosa',
+                legalLastName: 'Alvarez',
+                addresses: [{street: '10 Downing Street', city: 'London', state: '', zip: 'SW1A 2AA', country: 'GB', current: true}],
+            });
+
+            expect(incompleteAddress).toEqual({legalFirstName: 'Rosa', legalLastName: 'Alvarez'});
+            expect(foreignAddress).toEqual({legalFirstName: 'Rosa', legalLastName: 'Alvarez'});
+        });
+
+        it('lets the personal info submission carry the profile name and address', () => {
+            const values = {...newSessionValues, ...getPersonalInfoValuesFromProfile(newSessionValues, SAVED_PROFILE), dob: '1990-09-15', phoneNumber: '2125550123', ssn: '1234'};
+
+            expect(getWalletPersonalDetailsParams(values)).toMatchObject({
+                legalFirstName: 'Rosa',
+                legalLastName: 'Alvarez',
+                addressStreet: '350 Fifth Avenue, Floor 5',
+                addressCity: 'New York',
+                addressState: 'NY',
+                addressZip: '10118',
+            });
+        });
     });
 
     describe('isLegalNameComplete', () => {

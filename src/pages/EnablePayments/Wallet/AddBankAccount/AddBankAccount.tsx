@@ -18,7 +18,12 @@ import {updateCurrentStep} from '@libs/actions/Wallet';
 import Navigation from '@navigation/Navigation';
 
 import LegalName from '@pages/AddPersonalBankAccountPage/substeps/LegalNameStep';
-import getAccountHolderDetails, {getSavedAccountHolderDetails, isAddressComplete, isLegalNameComplete} from '@pages/EnablePayments/Wallet/utils/getAccountHolderDetails';
+import getAccountHolderDetails, {
+    getSavedAccountHolderDetails,
+    getWalletPersonalInfoValues,
+    isAddressComplete,
+    isLegalNameComplete,
+} from '@pages/EnablePayments/Wallet/utils/getAccountHolderDetails';
 import useIsBankAccountAdded from '@pages/EnablePayments/Wallet/utils/useIsBankAccountAdded';
 
 import CONST from '@src/CONST';
@@ -80,15 +85,7 @@ function AddBankAccount() {
             addPersonalBankAccount({...accountHolderDetails, country: CONST.COUNTRY.US, ...bankAccountWithToken}, personalPolicyID);
 
             // The personal info step asks for the same name and address, so give it the ones that were just confirmed
-            setDraftValues(ONYXKEYS.FORMS.WALLET_ADDITIONAL_DETAILS, {
-                legalFirstName: accountHolderDetails.legalFirstName,
-                legalLastName: accountHolderDetails.legalLastName,
-                // The personal info form has a single street field, so a unit goes on the same line
-                addressStreet: accountHolderDetails.addressStreet2 ? `${accountHolderDetails.addressStreet}, ${accountHolderDetails.addressStreet2}` : accountHolderDetails.addressStreet,
-                addressCity: accountHolderDetails.addressCity,
-                addressState: accountHolderDetails.addressState,
-                addressZipCode: accountHolderDetails.addressZipCode,
-            });
+            setDraftValues(ONYXKEYS.FORMS.WALLET_ADDITIONAL_DETAILS, getWalletPersonalInfoValues(accountHolderDetails));
         }
     }, [isBankAccountAlreadyAdded, personalBankAccountDraft, plaidData?.bankAccounts, plaidData?.plaidAccessToken, personalPolicyID, privatePersonalDetails]);
 

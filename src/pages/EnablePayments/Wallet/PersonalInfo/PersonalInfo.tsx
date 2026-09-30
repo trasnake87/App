@@ -9,10 +9,11 @@ import type {SubPageProps} from '@hooks/useSubPage/types';
 import getWalletPersonalDetailsParams from '@pages/EnablePayments/shared/getWalletPersonalDetailsParams';
 import IdologyQuestions from '@pages/EnablePayments/shared/IdologyQuestions';
 import useWalletPhoneValidateCode from '@pages/EnablePayments/shared/useWalletPhoneValidateCode';
-import {isAddressComplete, isLegalNameComplete} from '@pages/EnablePayments/Wallet/utils/getAccountHolderDetails';
+import {getPersonalInfoValuesFromProfile, isAddressComplete, isLegalNameComplete} from '@pages/EnablePayments/Wallet/utils/getAccountHolderDetails';
 import getInitialSubstepForPersonalInfo from '@pages/EnablePayments/Wallet/utils/getInitialSubstepForPersonalInfo';
 import getSubstepValues from '@pages/EnablePayments/Wallet/utils/getSubstepValues';
 
+import {setDraftValues} from '@userActions/FormActions';
 import {setAdditionalDetailsQuestions, updateCurrentStep} from '@userActions/Wallet';
 
 import CONST from '@src/CONST';
@@ -20,8 +21,9 @@ import type {EnablePaymentsSubPageType} from '@src/CONST';
 import ONYXKEYS from '@src/ONYXKEYS';
 import ROUTES from '@src/ROUTES';
 import INPUT_IDS from '@src/types/form/WalletAdditionalDetailsForm';
+import {isEmptyObject} from '@src/types/utils/EmptyObject';
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 
 import Address from './substeps/AddressStep';
 import Confirmation from './substeps/ConfirmationStep';
@@ -47,12 +49,30 @@ function PersonalInfoPage() {
 
     const [walletAdditionalDetails] = useOnyx(ONYXKEYS.WALLET_ADDITIONAL_DETAILS);
     const [walletAdditionalDetailsDraft] = useOnyx(ONYXKEYS.FORMS.WALLET_ADDITIONAL_DETAILS_DRAFT);
+    const [privatePersonalDetails] = useOnyx(ONYXKEYS.PRIVATE_PERSONAL_DETAILS);
 
     const showIdologyQuestions = walletAdditionalDetails?.questions && walletAdditionalDetails?.questions.length > 0;
 
     const {submitPersonalDetails} = useWalletPhoneValidateCode();
 
-    const values = useMemo(() => getSubstepValues(PERSONAL_INFO_STEP_KEYS, walletAdditionalDetailsDraft, walletAdditionalDetails), [walletAdditionalDetails, walletAdditionalDetailsDraft]);
+    const stepValues = useMemo(
+        () => getSubstepValues(PERSONAL_INFO_STEP_KEYS, walletAdditionalDetailsDraft, walletAdditionalDetails),
+        [walletAdditionalDetails, walletAdditionalDetailsDraft],
+    );
+
+    // The bank account step passes its name and address on through the draft, which a new session or another device
+    // doesn't have. AddPersonalBankAccount also saved them to the profile, so a missing name or address comes from there.
+    const valuesFromProfile = useMemo(() => getPersonalInfoValuesFromProfile(stepValues, privatePersonalDetails), [privatePersonalDetails, stepValues]);
+    const values = useMemo(() => ({...stepValues, ...valuesFromProfile}), [stepValues, valuesFromProfile]);
+
+    // The confirmation and edit pages, and the validate code page a new phone number goes through, read the draft, so
+    // the profile values are copied there as well
+    useEffect(() => {
+        if (isEmptyObject(valuesFromProfile)) {
+            return;
+        }
+        setDraftValues(ONYXKEYS.FORMS.WALLET_ADDITIONAL_DETAILS, valuesFromProfile);
+    }, [valuesFromProfile]);
 
     const submit = () => {
         submitPersonalDetails(getWalletPersonalDetailsParams(values));

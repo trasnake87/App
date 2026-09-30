@@ -4,6 +4,7 @@ import {isValidAddress, isValidLegalName, isValidZipCode} from '@libs/Validation
 
 import CONST from '@src/CONST';
 import type {PersonalBankAccountForm} from '@src/types/form';
+import type {PersonalInfoStepProps} from '@src/types/form/WalletAdditionalDetailsForm';
 import type {PrivatePersonalDetails} from '@src/types/onyx';
 
 import type {OnyxEntry} from 'react-native-onyx';
@@ -18,6 +19,9 @@ type AccountHolderDetails = {
     addressState: string;
     addressZipCode: string;
 };
+
+/** The same details in the wallet personal info form */
+type WalletPersonalInfoValues = Pick<PersonalInfoStepProps, 'legalFirstName' | 'legalLastName' | 'addressStreet' | 'addressCity' | 'addressState' | 'addressZipCode'>;
 
 /**
  * The legal name and address saved in the profile. The wallet only supports US bank accounts, so an address in
@@ -77,6 +81,32 @@ function isAddressComplete({
     return isValidAddress(addressStreet) && !!addressCity && !!addressState && isValidZipCode(addressZipCode);
 }
 
+/** The details as the wallet personal info form holds them: it has a single street field, so a unit goes on that line */
+function getWalletPersonalInfoValues(details: AccountHolderDetails): WalletPersonalInfoValues {
+    return {
+        legalFirstName: details.legalFirstName,
+        legalLastName: details.legalLastName,
+        addressStreet: details.addressStreet2 ? `${details.addressStreet}, ${details.addressStreet2}` : details.addressStreet,
+        addressCity: details.addressCity,
+        addressState: details.addressState,
+        addressZipCode: details.addressZipCode,
+    };
+}
+
+/**
+ * The profile's legal name and address for whichever of the two the wallet personal info step has no complete value
+ * for. Each is taken whole, and only when the profile's own value is complete, so sources are never mixed.
+ */
+function getPersonalInfoValuesFromProfile(values: WalletPersonalInfoValues, privatePersonalDetails: OnyxEntry<PrivatePersonalDetails>): Partial<WalletPersonalInfoValues> {
+    const profileValues = getWalletPersonalInfoValues(getSavedAccountHolderDetails(privatePersonalDetails));
+    const {legalFirstName, legalLastName, ...address} = profileValues;
+
+    return {
+        ...(!isLegalNameComplete(values) && isLegalNameComplete(profileValues) ? {legalFirstName, legalLastName} : {}),
+        ...(!isAddressComplete(values) && isAddressComplete(profileValues) ? address : {}),
+    };
+}
+
 export default getAccountHolderDetails;
-export {getSavedAccountHolderDetails, isAddressComplete, isLegalNameComplete};
-export type {AccountHolderDetails};
+export {getPersonalInfoValuesFromProfile, getSavedAccountHolderDetails, getWalletPersonalInfoValues, isAddressComplete, isLegalNameComplete};
+export type {AccountHolderDetails, WalletPersonalInfoValues};
