@@ -468,6 +468,50 @@ describe('useAdvancedSearchFilters', () => {
                 expect(allKeys).not.toContain(CONST.SEARCH.SYNTAX_FILTER_KEYS.BANK_ACCOUNT);
             });
         });
+
+        it('lists the bank account filter once, at the head of the withdrawal section for expense type', async () => {
+            const bankAccountID = 42;
+            await Onyx.merge(ONYXKEYS.BANK_ACCOUNT_LIST, {
+                [bankAccountID]: {
+                    accountData: {
+                        bankAccountID,
+                        accountNumber: '123456789012',
+                        type: CONST.BANK_ACCOUNT.TYPE.BUSINESS,
+                        state: CONST.BANK_ACCOUNT.STATE.OPEN,
+                        additionalData: {bankName: CONST.BANK_NAMES.CHASE},
+                    },
+                },
+            });
+
+            const {result} = renderHook(() => useAdvancedSearchFilters(CONST.SEARCH.DATA_TYPES.EXPENSE), {wrapper});
+
+            await waitFor(() => {
+                const withdrawalSection = result.current.find((section) => section.includes(CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWAL_ID));
+                expect(withdrawalSection).toEqual([
+                    CONST.SEARCH.SYNTAX_FILTER_KEYS.BANK_ACCOUNT,
+                    CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWAL_ID,
+                    CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWAL_TYPE,
+                    CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWAL_STATUS,
+                    CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWN,
+                ]);
+                const bankAccountOccurrences = result.current.flat().filter((key) => key === CONST.SEARCH.SYNTAX_FILTER_KEYS.BANK_ACCOUNT);
+                expect(bankAccountOccurrences).toHaveLength(1);
+            });
+        });
+
+        it('keeps the other withdrawal filters when no filterable bank account exists', async () => {
+            const {result} = renderHook(() => useAdvancedSearchFilters(CONST.SEARCH.DATA_TYPES.EXPENSE), {wrapper});
+
+            await waitFor(() => {
+                const withdrawalSection = result.current.find((section) => section.includes(CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWAL_ID));
+                expect(withdrawalSection).toEqual([
+                    CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWAL_ID,
+                    CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWAL_TYPE,
+                    CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWAL_STATUS,
+                    CONST.SEARCH.SYNTAX_FILTER_KEYS.WITHDRAWN,
+                ]);
+            });
+        });
     });
 
     describe('cross-feature interaction', () => {
