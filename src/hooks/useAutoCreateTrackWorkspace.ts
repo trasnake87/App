@@ -135,6 +135,11 @@ function useAutoCreateTrackWorkspace() {
             } catch (error) {
                 Log.warn('[useAutoCreateTrackWorkspace] Error completing onboarding', {error});
             } finally {
+                // Also covers the error path.
+                if (!rhpVariant && isTrackOnboardingChoice(onboardingPurposeSelected)) {
+                    rhpVariant = CONST.ONBOARDING_RHP_VARIANT.TRACK_EXPENSES_WITH_CONCIERGE;
+                }
+
                 setOnboardingAdminsChatReportID();
                 setOnboardingPolicyID();
 

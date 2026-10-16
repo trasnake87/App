@@ -47,28 +47,19 @@ describe('navigateToSubmitWorkspaceAfterOnboardingWithMicrotaskQueue', () => {
         expect(SidePanelActions.openSidePanel).not.toHaveBeenCalled();
     });
 
-    it('navigates to Spend > Expenses with the expanded side panel when not using narrow layout', () => {
-        navigateToSubmitWorkspaceAfterOnboardingWithMicrotaskQueue('test-policy-id', false);
+    it('navigates to Spend > Expenses without opening the side panel', () => {
+        // Given a Submit workspace was created during onboarding, which keeps its own Expenses landing A/B test
+        // When onboarding exits to that workspace
+        navigateToSubmitWorkspaceAfterOnboardingWithMicrotaskQueue('test-policy-id');
 
+        // Then Expenses still opens
         expect(navigationMock.dismissModal).toHaveBeenCalledTimes(1);
         expect(navigationMock.navigate).toHaveBeenCalledTimes(1);
         expect(navigationMock.navigate).toHaveBeenCalledWith(
             ROUTES.SEARCH_ROOT.getRoute({query: buildCannedSearchQuery({type: CONST.SEARCH.DATA_TYPES.EXPENSE}), searchKey: CONST.SEARCH.SEARCH_KEYS.EXPENSES}),
         );
-        // The side panel shows the #admins room, where the Submit welcome and its suggested responses are posted.
-        expect(setOnboardingRHPVariant).toHaveBeenCalledWith(CONST.ONBOARDING_RHP_VARIANT.RHP_ADMINS_ROOM);
-        expect(SidePanelActions.openSidePanel).toHaveBeenCalledWith(true);
-    });
-
-    it('navigates to Spend > Expenses with the collapsed side panel when using narrow layout', () => {
-        navigateToSubmitWorkspaceAfterOnboardingWithMicrotaskQueue('test-policy-id', true);
-
-        expect(navigationMock.dismissModal).toHaveBeenCalledTimes(1);
-        expect(navigationMock.navigate).toHaveBeenCalledTimes(1);
-        expect(navigationMock.navigate).toHaveBeenCalledWith(
-            ROUTES.SEARCH_ROOT.getRoute({query: buildCannedSearchQuery({type: CONST.SEARCH.DATA_TYPES.EXPENSE}), searchKey: CONST.SEARCH.SEARCH_KEYS.EXPENSES}),
-        );
-        expect(setOnboardingRHPVariant).toHaveBeenCalledWith(CONST.ONBOARDING_RHP_VARIANT.RHP_ADMINS_ROOM);
-        expect(SidePanelActions.openSidePanel).toHaveBeenCalledWith(false);
+        // Then no onboarding exit opens the side panel, so the #admins default is never assigned either
+        expect(setOnboardingRHPVariant).not.toHaveBeenCalled();
+        expect(SidePanelActions.openSidePanel).not.toHaveBeenCalled();
     });
 });

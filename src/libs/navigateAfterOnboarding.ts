@@ -10,8 +10,6 @@ import type {OnyxCollection, OnyxEntry} from 'react-native-onyx';
 import Onyx from 'react-native-onyx';
 
 import {setDisableDismissOnEscape} from './actions/Modal';
-import SidePanelActions from './actions/SidePanel';
-import {setOnboardingRHPVariant} from './actions/Welcome';
 import isReportTopmostSplitNavigator from './Navigation/helpers/isReportTopmostSplitNavigator';
 import dismissOnboardingModalBeforeExit from './Navigation/helpers/OnboardingNavigationUtils';
 import shouldOpenOnAdminRoom from './Navigation/helpers/shouldOpenOnAdminRoom';
@@ -86,25 +84,15 @@ function navigateAfterOnboarding(
 ) {
     setDisableDismissOnEscape(false);
 
-    // On mobile (small screen), Track workspace admins with the trackExpensesWithConcierge variant
-    // should navigate directly to the Concierge DM (which contains onboarding tasks).
-    // This check is outside shouldOpenRHPVariant because that function returns false on native
-    // (Side Panel doesn't exist on native), but we still need to navigate to Concierge on mobile.
     const navigationOptions = options?.afterTransition ? {afterTransition: options.afterTransition} : undefined;
     const variantOverride = options?.variantOverride;
     const variant = variantOverride ?? onboardingRHPVariant;
 
-    // The homePageNoRHP arm of the onboarding experiment lands on Home without opening the side panel, at every company size,
-    // so it is handled before the variants that are limited to micro companies or that open the side panel.
-    if (variant === CONST.ONBOARDING_RHP_VARIANT.HOME_PAGE_NO_RHP) {
+    // Both land on Home with no side panel, at any width.
+    if (variant === CONST.ONBOARDING_RHP_VARIANT.HOME_PAGE_NO_RHP || variant === CONST.ONBOARDING_RHP_VARIANT.TRACK_EXPENSES_WITH_CONCIERGE) {
         if (!isReportTopmostSplitNavigator()) {
             Navigation.navigate(ROUTES.HOME, navigationOptions);
         }
-        return;
-    }
-
-    if (isSmallScreenWidth && variant === CONST.ONBOARDING_RHP_VARIANT.TRACK_EXPENSES_WITH_CONCIERGE) {
-        Navigation.navigate(ROUTES.REPORT_WITH_ID.getRoute(conciergeReportID), navigationOptions);
         return;
     }
 
@@ -157,10 +145,9 @@ function navigateAfterOnboardingWithMicrotaskQueue(
 }
 
 /**
- * After creating or joining a Submit workspace during onboarding, navigate to Spend > Expenses
- * with the side panel open so the #admins room is visible in Concierge Anywhere.
+ * After creating or joining a Submit workspace during onboarding, navigate to Spend > Expenses.
  */
-function navigateToSubmitWorkspaceAfterOnboarding(policyID?: string, shouldUseNarrowLayout = false) {
+function navigateToSubmitWorkspaceAfterOnboarding(policyID?: string) {
     setDisableDismissOnEscape(false);
 
     if (!policyID) {
@@ -168,15 +155,14 @@ function navigateToSubmitWorkspaceAfterOnboarding(policyID?: string, shouldUseNa
         return;
     }
 
-    setOnboardingRHPVariant(CONST.ONBOARDING_RHP_VARIANT.RHP_ADMINS_ROOM);
+    // No onboarding exit opens the side panel: no setOnboardingRHPVariant, no openSidePanel.
     Navigation.navigate(ROUTES.SEARCH_ROOT.getRoute({query: buildCannedSearchQuery({type: CONST.SEARCH.DATA_TYPES.EXPENSE}), searchKey: CONST.SEARCH.SEARCH_KEYS.EXPENSES}));
-    SidePanelActions.openSidePanel(!shouldUseNarrowLayout);
 }
 
-function navigateToSubmitWorkspaceAfterOnboardingWithMicrotaskQueue(policyID?: string, shouldUseNarrowLayout = false) {
+function navigateToSubmitWorkspaceAfterOnboardingWithMicrotaskQueue(policyID?: string) {
     dismissOnboardingModalBeforeExit(() => {
         Navigation.setNavigationActionToMicrotaskQueue(() => {
-            navigateToSubmitWorkspaceAfterOnboarding(policyID, shouldUseNarrowLayout);
+            navigateToSubmitWorkspaceAfterOnboarding(policyID);
         });
     });
 }

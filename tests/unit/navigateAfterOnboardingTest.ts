@@ -19,6 +19,7 @@ const ONBOARDING_ADMINS_CHAT_REPORT_ID = '1';
 const ONBOARDING_POLICY_ID = '2';
 const REPORT_ID = '3';
 const USER_ID = '4';
+const CONCIERGE_REPORT_ID = '5';
 const mockFindLastAccessedReport = jest.fn<ReportUtils.LastAccessedReport | undefined, Parameters<typeof ReportUtils.findLastAccessedReport>>();
 const mockShouldOpenOnAdminRoom = jest.fn(() => false);
 const mockIsReportTopmostSplitNavigator = jest.fn(() => false);
@@ -261,6 +262,26 @@ describe('navigateAfterOnboarding', () => {
         // Then the report stays where it is, and the side panel is not opened over it
         expect(navigate).not.toHaveBeenCalled();
         expect(openSidePanel).not.toHaveBeenCalled();
+    });
+
+    it('should land on Home without opening the side panel for the trackExpensesWithConcierge variant on small screens', async () => {
+        // Given a Track user on a small screen, where this variant used to open the Concierge DM instead of Home
+        const navigate = jest.spyOn(Navigation, 'navigate');
+        const openSidePanel = jest.spyOn(SidePanelActions, 'openSidePanel');
+
+        // When onboarding finishes with the trackExpensesWithConcierge variant
+        navigateAfterOnboarding(true, true, CONCIERGE_REPORT_ID, {}, ONBOARDING_POLICY_ID, ONBOARDING_ADMINS_CHAT_REPORT_ID, false, {
+            variantOverride: CONST.ONBOARDING_RHP_VARIANT.TRACK_EXPENSES_WITH_CONCIERGE,
+        });
+        await waitForBatchedUpdates();
+
+        // Then the user lands on Home at every width, with no Concierge DM and no side panel
+        expect(navigate).toHaveBeenCalledWith(ROUTES.HOME, undefined);
+        expect(navigate).not.toHaveBeenCalledWith(ROUTES.REPORT_WITH_ID.getRoute(CONCIERGE_REPORT_ID), undefined);
+        expect(openSidePanel).not.toHaveBeenCalled();
+        const sidePanel = await getOnyxValue(ONYXKEYS.NVP_SIDE_PANEL);
+        expect(sidePanel?.open).toBeFalsy();
+        expect(sidePanel?.openNarrowScreen).toBeFalsy();
     });
 
     it('should use the stored homePageNoRHP variant when the onboarding response does not carry one', async () => {
