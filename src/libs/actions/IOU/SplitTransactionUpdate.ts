@@ -38,6 +38,7 @@ import {
     getTransactionDetails,
     getUnheldReimbursableTotal,
     isArchivedReport,
+    isOpenExpenseReport,
     isPolicyExpenseChat as isPolicyExpenseChatReportUtil,
     isSelfDM,
     updateOptimisticParentReportAction,
@@ -185,6 +186,29 @@ function hasEditableSplitExpenseLeft(
     });
 }
 
+/**
+ * Whether this save collapses the splits back into the original transaction, which the server only allows while the
+ * report the split was made on is still open.
+ */
+function getIsReverseSplitOperation(
+    splitExpenses: SplitExpense[],
+    allChildTransactions: Array<OnyxEntry<OnyxTypes.Transaction>>,
+    expenseReport: OnyxEntry<OnyxTypes.Report>,
+    allTransactionsList: OnyxCollection<OnyxTypes.Transaction>,
+    allReportsList: OnyxCollection<OnyxTypes.Report>,
+    searchReportsData: SearchResultDataType | undefined,
+): boolean {
+    if (splitExpenses.length !== 1 || allChildTransactions.length === 0) {
+        return false;
+    }
+    // A split made on a submitted/approved report can't be reverted (the server refuses it), wherever the
+    // remaining split now lives. `expenseReport` is undefined for selfDM, which stays revertible.
+    if (expenseReport && !isOpenExpenseReport(expenseReport)) {
+        return false;
+    }
+    return hasEditableSplitExpenseLeft(splitExpenses, allTransactionsList, allReportsList, searchReportsData);
+}
+
 function updateSplitTransactions({
     allTransactionsList,
     allReportsList,
@@ -305,8 +329,7 @@ function updateSplitTransactions({
 
     const isCreationOfSplits = allChildTransactions.length === 0;
     const currentSnapshotDataForSplits = allSnapshots?.[`${ONYXKEYS.COLLECTION.SNAPSHOT}${searchContext?.currentSearchHash}`]?.data;
-    const hasEditableSplitExpensesLeft = hasEditableSplitExpenseLeft(splitExpenses, allTransactionsList, allReportsList, currentSnapshotDataForSplits);
-    const isReverseSplitOperation = splitExpenses.length === 1 && allChildTransactions.length > 0 && hasEditableSplitExpensesLeft;
+    const isReverseSplitOperation = getIsReverseSplitOperation(splitExpenses, allChildTransactions, expenseReport, allTransactionsList, allReportsList, currentSnapshotDataForSplits);
 
     let splitThreadComments: OnyxTypes.ReportAction[] = [];
     let splitThreadReportAction: OnyxTypes.ReportAction | undefined;
@@ -357,9 +380,7 @@ function updateSplitTransactions({
                 merchant: split?.merchant ?? '',
                 transactionID: split.transactionID,
                 reportID: split.reportID,
-                comment: {
-                    comment: currentDescription,
-                },
+                comment: currentDescription,
                 reimbursable: split?.reimbursable,
                 billable: split?.billable,
                 taxCode: split?.taxCode,
@@ -844,7 +865,6 @@ function updateSplitTransactions({
         if (splitTransaction) {
             const transactionChanges = {
                 ...currentSplit,
-                comment: currentSplit?.comment?.comment,
                 customUnitRateID: currentSplit?.customUnitRateID ?? CONST.CUSTOM_UNITS.FAKE_P2P_ID,
             } as TransactionChanges;
             delete transactionChanges.reportID;
@@ -2028,7 +2048,6 @@ function updateSplitTransactions({
     if (isReverseSplitOperation) {
         const parameters = {
             ...splits.at(0),
-            comment: splits.at(0)?.comment?.comment,
             waypoints: splits.at(0)?.waypoints ? JSON.stringify(splits.at(0)?.waypoints) : undefined,
             copiedComments: splits.at(0)?.copiedComments ? JSON.stringify(splits.at(0)?.copiedComments) : undefined,
         } as RevertSplitTransactionParams;
@@ -2053,5 +2072,5 @@ function updateSplitTransactions({
     TransitionTracker.runAfterTransitions({callback: () => removeDraftSplitTransaction(originalTransactionID), waitForUpcomingTransition: true});
 }
 
-export {hasEditableSplitExpenseLeft, updateSplitTransactions};
+export {getIsReverseSplitOperation, hasEditableSplitExpenseLeft, updateSplitTransactions};
 export type {UpdateSplitTransactionsParams};

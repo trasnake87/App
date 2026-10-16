@@ -7,7 +7,7 @@ import {getChildTransactions} from '@libs/TransactionUtils';
 
 import signalExpenseAddedGrowl from '@userActions/IOU/signalExpenseAddedGrowl';
 import type {UpdateSplitTransactionsParams} from '@userActions/IOU/SplitTransactionUpdate';
-import {hasEditableSplitExpenseLeft, updateSplitTransactions} from '@userActions/IOU/SplitTransactionUpdate';
+import {getIsReverseSplitOperation, updateSplitTransactions} from '@userActions/IOU/SplitTransactionUpdate';
 import {setDeleteTransactionNavigateBackUrl} from '@userActions/Report';
 
 import CONST from '@src/CONST';
@@ -29,11 +29,17 @@ function updateSplitTransactionsFromSplitExpensesFlow(params: UpdateSplitTransac
     const originalTransactionID = params.transactionData?.originalTransactionID ?? CONST.IOU.OPTIMISTIC_TRANSACTION_ID;
     const allChildTransactions = getChildTransactions(params.allTransactionsList, originalTransactionID);
     const currentSnapshotDataForSplits = params.allSnapshots?.[`${ONYXKEYS.COLLECTION.SNAPSHOT}${params.searchContext?.currentSearchHash}`]?.data;
-    const hasEditableSplitExpensesLeft = hasEditableSplitExpenseLeft(splitExpenses, params.allTransactionsList, params.allReportsList, currentSnapshotDataForSplits);
 
     // Unfiltered, so a pure selfDM 2-split still collapses via REVERT_SPLIT_TRANSACTION. The mixed
     // workspace/selfDM case is guarded below via reverseSplitKeepsOriginalInExpenseReport instead.
-    const isReverseSplitOperation = splitExpenses.length === 1 && allChildTransactions.length > 0 && hasEditableSplitExpensesLeft;
+    const isReverseSplitOperation = getIsReverseSplitOperation(
+        splitExpenses,
+        allChildTransactions,
+        params.expenseReport,
+        params.allTransactionsList,
+        params.allReportsList,
+        currentSnapshotDataForSplits,
+    );
 
     // Newly created split transaction IDs, excluding ones already present in allChildTransactions.
     function getNewSplitTransactionIDs(): string[] {

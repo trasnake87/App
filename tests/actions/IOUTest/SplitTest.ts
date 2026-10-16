@@ -3099,6 +3099,9 @@ describe('updateSplitTransactionsFromSplitExpensesFlow', () => {
         const expenseReport: Report = {
             ...createRandomReport(1, undefined),
             type: CONST.REPORT.TYPE.EXPENSE,
+            // `createRandomReport` leaves the status fields unset, and only a split made on an open report is revertible
+            stateNum: CONST.REPORT.STATE_NUM.OPEN,
+            statusNum: CONST.REPORT.STATUS_NUM.OPEN,
         };
         const selfDMReport = createSelfDM(2, RORY_ACCOUNT_ID);
         const originalTransactionID = 'mixed-revert-original';
@@ -4654,6 +4657,9 @@ describe('updateSplitTransactionsFromSplitExpensesFlow', () => {
             type: CONST.REPORT.TYPE.EXPENSE,
             chatReportID: chatReport.reportID,
             parentReportID: chatReport.reportID,
+            // `createRandomReport` leaves the status fields unset, and only a split made on an open report is revertible
+            stateNum: CONST.REPORT.STATE_NUM.OPEN,
+            statusNum: CONST.REPORT.STATUS_NUM.OPEN,
         };
 
         const originalTransaction: Transaction = {
@@ -7365,6 +7371,88 @@ describe('updateSplitTransactions', () => {
         expect(isMoneyRequestAction(updatedStaleAction2) && getOriginalMessage(updatedStaleAction2)?.IOUTransactionID).toBeFalsy();
         expect(isDeletedAction(updatedStaleAction1)).toBe(true);
         expect(isDeletedAction(updatedStaleAction2)).toBe(true);
+    });
+
+    it('should not revert a split made on a submitted report when the remaining split was rejected onto an open report', async () => {
+        // Given an expense split into two on a workspace expense report
+        const {expenseReport, originalTransactionID} = await createBaseExpense();
+
+        if (!originalTransactionID || !expenseReport?.reportID) {
+            throw new Error('Missing original transaction data');
+        }
+
+        const iouAction = getIOUActionForReportID(expenseReport.reportID, originalTransactionID);
+        const {splitTransactionID1} = await splitToTwo(expenseReport, originalTransactionID, iouAction);
+
+        // And given that report has been submitted, so the server refuses to revert its splits
+        await Onyx.merge(`${ONYXKEYS.COLLECTION.REPORT}${expenseReport.reportID}`, {
+            stateNum: CONST.REPORT.STATE_NUM.SUBMITTED,
+            statusNum: CONST.REPORT.STATUS_NUM.SUBMITTED,
+        });
+
+        // And given one split was rejected, which re-homes its transaction onto the submitter's own open report
+        const rejectedReportID = '7654321';
+        await Onyx.merge(`${ONYXKEYS.COLLECTION.REPORT}${rejectedReportID}`, {
+            reportID: rejectedReportID,
+            type: CONST.REPORT.TYPE.EXPENSE,
+            stateNum: CONST.REPORT.STATE_NUM.OPEN,
+            statusNum: CONST.REPORT.STATUS_NUM.OPEN,
+            policyID: expenseReport.policyID,
+            chatReportID: expenseReport.chatReportID,
+        });
+        await Onyx.merge(`${ONYXKEYS.COLLECTION.TRANSACTION}${splitTransactionID1}`, {reportID: rejectedReportID});
+        await waitForBatchedUpdates();
+
+        const {allTransactions, allReports, allReportActions, allReportNameValuePairs} = await getCollections();
+        const allPolicyTags = await getAllPolicyTags();
+        const reports = getTransactionAndExpenseReports(expenseReport.reportID);
+
+        const writeSpy = jest.spyOn(APIlib, 'write');
+
+        // When the other split is removed, leaving only the rejected split in the draft
+        updateSplitTransactions({
+            isVendorMatchingBetaEnabled: false,
+            rules: undefined,
+            getCurrencyDecimals: getCurrencyDecimalsLocal,
+            getCurrencySymbol: getCurrencySymbolLocal,
+            allTransactionsList: allTransactions,
+            allReportsList: allReports,
+            allReportActionsList: allReportActions,
+            allReportNameValuePairsList: allReportNameValuePairs,
+            transactionData: {
+                reportID: expenseReport.reportID,
+                originalTransactionID,
+                splitExpenses: [{transactionID: splitTransactionID1, reportID: rejectedReportID, amount, created: DateUtils.getDBTime()}],
+                splitExpensesTotal: amount,
+            },
+            searchContext: {currentSearchHash: -2},
+            policyCategories: undefined,
+            policy: undefined,
+            policyRecentlyUsedCategories: [],
+            iouReport: reports.expenseReport,
+            firstIOU: undefined,
+            isASAPSubmitBetaEnabled: false,
+            currentUserPersonalDetails,
+            transactionViolations: {},
+            policyRecentlyUsedCurrencies: [],
+            quickAction: undefined,
+            allPolicyTags,
+            personalDetails: {[RORY_ACCOUNT_ID]: {accountID: RORY_ACCOUNT_ID, login: RORY_EMAIL}},
+            transactionReport: reports.transactionReport,
+            expenseReport: reports.expenseReport,
+            isOffline: false,
+            delegateAccountID: undefined,
+            isTrackIntentUser: false,
+            formatPhoneNumber,
+        });
+        await waitForBatchedUpdates();
+
+        const commands = writeSpy.mock.calls.map(([command]) => command);
+        writeSpy.mockRestore();
+
+        // Then the save goes through UPDATE_SPLIT_TRANSACTION instead of the revert the server would reject
+        expect(commands).toContain(WRITE_COMMANDS.UPDATE_SPLIT_TRANSACTION);
+        expect(commands).not.toContain(WRITE_COMMANDS.REVERT_SPLIT_TRANSACTION);
     });
 });
 
@@ -11534,6 +11622,9 @@ const buildSplitFlowParams = async ({withExistingSplitChildren = false, asSelfDM
     const expenseReport: Report = {
         ...createRandomReport(9001, undefined),
         type: CONST.REPORT.TYPE.EXPENSE,
+        // `createRandomReport` leaves the status fields unset, and only a split made on an open report is revertible
+        stateNum: CONST.REPORT.STATE_NUM.OPEN,
+        statusNum: CONST.REPORT.STATUS_NUM.OPEN,
     };
     const transaction: Transaction = {
         amount: 100,
