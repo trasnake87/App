@@ -12,6 +12,7 @@ import useThemeStyles from '@hooks/useThemeStyles';
 
 import {openReport, setOptimisticTransactionThread} from '@libs/actions/Report';
 import {clearActiveTransactionIDs} from '@libs/actions/TransactionThreadNavigation';
+import extractNavigationKeys from '@libs/Navigation/helpers/extractNavigationKeys';
 import type {RightModalNavigatorParamList} from '@libs/Navigation/types';
 import {getExpenseCreationTransactionID} from '@libs/ReportActionsUtils';
 import {findSelfDMReportID, isOneTransactionReport} from '@libs/ReportUtils';
@@ -30,7 +31,7 @@ import getEmptyArray from '@src/types/utils/getEmptyArray';
 import type {GestureResponderEvent} from 'react-native';
 import type {OnyxCollection, OnyxEntry} from 'react-native-onyx';
 
-import {findFocusedRoute, useIsFocused} from '@react-navigation/native';
+import {findFocusedRoute, useIsFocused, useRoute} from '@react-navigation/native';
 import {guidedSetupAndTourStatusSelector} from '@selectors/Onboarding';
 import React, {startTransition, useCallback, useEffect, useMemo, useRef} from 'react';
 import {View} from 'react-native';
@@ -98,6 +99,7 @@ function MoneyRequestReportTransactionsNavigation({currentTransactionID, isFromR
 
     const {isOffline} = useNetwork();
     const isFocused = useIsFocused();
+    const routeKey = useRoute().key;
 
     const currentTransactionIndex = transactionIDsList.findIndex((id) => id === currentTransactionID);
 
@@ -208,13 +210,19 @@ function MoneyRequestReportTransactionsNavigation({currentTransactionID, isFromR
      */
     useEffect(() => {
         return () => {
-            const focusedRoute = findFocusedRoute(navigationRef.getRootState());
+            const rootState = navigationRef.getRootState();
+            // An in-place teardown (ReportNotFoundGuard swapping its wrapper when the delete-back URL clears)
+            // leaves this route mounted, so the list still belongs to the expense on screen - keep it.
+            if (extractNavigationKeys(rootState?.routes).has(routeKey)) {
+                return;
+            }
+            const focusedRoute = findFocusedRoute(rootState);
             if (focusedRoute?.name && (CAROUSEL_PRESERVING_SCREENS as readonly string[]).includes(focusedRoute.name)) {
                 return;
             }
             clearActiveTransactionIDs();
         };
-    }, []);
+    }, [routeKey]);
 
     const stageSiblingPress = (transactionID: string | undefined, parentReportID: string | undefined) => {
         // Offline there is no fetch to wait for, so the caller resolves the sibling with what it already has.

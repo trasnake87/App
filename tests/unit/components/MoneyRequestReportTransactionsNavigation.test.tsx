@@ -83,10 +83,16 @@ jest.mock('@hooks/useNetwork', () => ({
     default: () => ({isOffline: mockIsOffline.value}),
 }));
 
-// Only useIsFocused is overridden; findFocusedRoute is the real one, since the teardown assertions depend on it.
+// The component's own route key, as reported by the mocked `useRoute`. The teardown compares it against the mocked
+// root state to tell an in-place remount from the component's route actually being popped.
+const OWN_ROUTE_KEY = 'own-route-key';
+
+// Only useIsFocused and useRoute are overridden; findFocusedRoute is the real one, since the teardown assertions
+// depend on it.
 jest.mock('@react-navigation/native', () => ({
     ...jest.requireActual<Record<string, unknown>>('@react-navigation/native'),
     useIsFocused: () => true,
+    useRoute: () => ({key: OWN_ROUTE_KEY}),
 }));
 
 type ReactActual = {createElement: typeof React.createElement; Fragment: typeof React.Fragment};
@@ -127,7 +133,12 @@ jest.mock('@navigation/Navigation', () => ({
     },
 }));
 
-const makeRootState = (focusedRouteName: string) => ({index: 0, routes: [{key: 'k', name: focusedRouteName}]});
+// `mountedRouteKey`, when given, is nested under the focused route so it shows up in the recursive key walk the
+// teardown does - i.e. that route is still part of the navigation state.
+const makeRootState = (focusedRouteName: string, mountedRouteKey?: string) => ({
+    index: 0,
+    routes: [{key: 'k', name: focusedRouteName, state: mountedRouteKey ? {index: 0, routes: [{key: mountedRouteKey, name: focusedRouteName}]} : undefined}],
+});
 const mockGetRootState = jest.fn(() => makeRootState('testRoute'));
 
 jest.mock('@navigation/navigationRef', () => ({
@@ -727,6 +738,18 @@ describe('MoneyRequestReportTransactionsNavigation', () => {
             renderNavigation().unmount();
 
             expect(clearActiveTransactionIDs).toHaveBeenCalled();
+        });
+
+        // An in-place teardown (ReportNotFoundGuard swapping its wrapper once the delete-back URL clears) unmounts
+        // this component while its own route is still in the navigation state and still the screen the user is
+        // looking at. The focused route name alone can't tell that apart from a pop, so the list - which belongs to
+        // the expense still on screen - must be kept even though the focused screen isn't carousel-preserving.
+        it('keeps the active transaction IDs when its own route is still in the navigation state', () => {
+            mockGetRootState.mockReturnValue(makeRootState(SCREENS.SEARCH.ROOT, OWN_ROUTE_KEY));
+
+            renderNavigation().unmount();
+
+            expect(clearActiveTransactionIDs).not.toHaveBeenCalled();
         });
     });
 });
