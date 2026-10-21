@@ -146,10 +146,17 @@ function TransferBalancePage() {
         selectedAccount?.accountType === CONST.PAYMENT_METHODS.PERSONAL_BANK_ACCOUNT ? CONST.WALLET.TRANSFER_METHOD_TYPE.ACH : CONST.WALLET.TRANSFER_METHOD_TYPE.INSTANT;
 
     const calculatedFee = calculateWalletTransferBalanceFee(userWallet?.currentBalance ?? 0, selectedPaymentType);
-    const transferAmount = userWallet?.currentBalance ?? 0 - calculatedFee;
+    const transferAmount = (userWallet?.currentBalance ?? 0) - calculatedFee;
     const isTransferable = transferAmount > 0;
-    const isButtonDisabled = !isTransferable || !selectedAccount;
+    const hasPendingTransferForCurrentBalance = walletTransfer?.pendingTransferBalance === (userWallet?.currentBalance ?? 0);
+    const isButtonDisabled = !isTransferable || !selectedAccount || hasPendingTransferForCurrentBalance;
     const errorMessage = getLatestErrorMessage(walletTransfer);
+    let alertMessage = '';
+    if (!isEmptyObject(errorMessage)) {
+        alertMessage = errorMessage;
+    } else if (hasPendingTransferForCurrentBalance) {
+        alertMessage = translate('transferAmountPage.transferPending');
+    }
 
     const shouldShowTransferView = hasExpensifyPaymentMethod(paymentCardList, bankAccountList ?? {}) && TRANSFER_TIER_NAMES.has(userWallet?.tierName ?? '');
 
@@ -219,10 +226,10 @@ function TransferBalancePage() {
                     <FormAlertWithSubmitButton
                         buttonText={translate('transferAmountPage.transfer', isTransferable ? convertToDisplayString(transferAmount, CONST.CURRENCY.USD) : '')}
                         isLoading={walletTransfer?.loading}
-                        onSubmit={() => selectedAccount && transferWalletBalance(selectedAccount)}
+                        onSubmit={() => selectedAccount && transferWalletBalance(selectedAccount, userWallet?.currentBalance ?? 0)}
                         isDisabled={isButtonDisabled || isOffline}
-                        message={errorMessage}
-                        isAlertVisible={!isEmptyObject(errorMessage)}
+                        message={alertMessage}
+                        isAlertVisible={!!alertMessage}
                         containerStyles={[styles.ph5, !paddingBottom ? styles.pb5 : null]}
                     />
                 </View>

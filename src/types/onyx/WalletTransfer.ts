@@ -17,6 +17,9 @@ type WalletTransfer = {
 
     loading?: boolean;
     paymentMethodType?: ValueOf<Pick<PaymentMethod, 'accountType'>>;
+
+    /** The wallet balance a transfer has already been submitted for. Cleared when that transfer fails. */
+    pendingTransferBalance?: number;
 };
 
 /** Available payment methods */

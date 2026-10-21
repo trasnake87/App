@@ -311,7 +311,7 @@ function setPaymentMethodCurrency(currency: ValueOf<typeof CONST.PAYMENT_CARD_CU
  * Call the API to transfer wallet balance.
  *
  */
-function transferWalletBalance(paymentMethod: PaymentMethod) {
+function transferWalletBalance(paymentMethod: PaymentMethod, currentBalance: number) {
     const paymentMethodIDKey =
         paymentMethod.accountType === CONST.PAYMENT_METHODS.PERSONAL_BANK_ACCOUNT ? CONST.PAYMENT_METHOD_ID_KEYS.BANK_ACCOUNT : CONST.PAYMENT_METHOD_ID_KEYS.DEBIT_CARD;
 
@@ -326,6 +326,7 @@ function transferWalletBalance(paymentMethod: PaymentMethod) {
             value: {
                 loading: true,
                 errors: null,
+                pendingTransferBalance: currentBalance,
             },
         },
     ];
@@ -349,6 +350,7 @@ function transferWalletBalance(paymentMethod: PaymentMethod) {
             value: {
                 loading: false,
                 shouldShowSuccess: false,
+                pendingTransferBalance: null,
             },
         },
     ];

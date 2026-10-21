@@ -3303,6 +3303,7 @@ const translations = {
         transferDetailBankAccount: 'Your money should arrive in the next 1-3 business days.',
         transferDetailDebitCard: 'Your money should arrive immediately.',
         failedTransfer: 'Your balance isn’t fully settled. Please transfer to a bank account.',
+        transferPending: 'A transfer of this balance is already in progress. Please wait for it to complete.',
         notHereSubTitle: 'Please transfer your balance from the wallet page',
         goToWallet: 'Go to Wallet',
     },
