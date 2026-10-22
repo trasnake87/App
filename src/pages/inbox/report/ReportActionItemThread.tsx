@@ -9,7 +9,10 @@ import useOnyx from '@hooks/useOnyx';
 import useThemeStyles from '@hooks/useThemeStyles';
 
 import {navigateToAndOpenChildReport} from '@libs/actions/Report';
+import getReportRouteForCurrentContext from '@libs/Navigation/helpers/getReportRouteForCurrentContext';
+import Navigation from '@libs/Navigation/Navigation';
 import {getParticipantsPersonalDetails} from '@libs/PersonalDetailsUtils';
+import {isCreatedSupportTicketReportAction} from '@libs/ReportActionsUtils';
 
 import CONST from '@src/CONST';
 import ONYXKEYS from '@src/ONYXKEYS';
@@ -77,6 +80,10 @@ function ReportActionItemThread({report, reportAction, isHovered, onSecondaryInt
             <View style={[styles.chatItemMessage]}>
                 <PressableWithSecondaryInteraction
                     onPress={() => {
+                        if (isCreatedSupportTicketReportAction(reportAction)) {
+                            Navigation.navigate(getReportRouteForCurrentContext({reportID: childReport?.reportID ?? reportAction.childReportID}));
+                            return;
+                        }
                         const participantsPersonalDetails = getParticipantsPersonalDetails([currentUserAccountID, Number(reportAction.actorAccountID)], personalDetails);
                         navigateToAndOpenChildReport(childReport, reportAction, report, currentUserAccountID, introSelected, participantsPersonalDetails, isSelfTourViewed, conciergeChat);
                     }}
