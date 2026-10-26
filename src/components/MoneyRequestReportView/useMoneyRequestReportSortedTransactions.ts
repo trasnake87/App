@@ -111,7 +111,12 @@ function useMoneyRequestReportSortedTransactions({
         if (!isSortableColumnName(selectedSortBy)) {
             return;
         }
-        setSortConfig((prevState) => ({...prevState, sortBy: selectedSortBy, sortOrder: selectedSortOrder}));
+        setSortConfig((prevState) => {
+            // SortableHeaderText emits DESC for any column that is not active; this table's Date default is ASC,
+            // so switching back to Date restores it. Toggling the active column is unchanged.
+            const isSwitchingToDate = selectedSortBy !== prevState.sortBy && selectedSortBy === CONST.SEARCH.TABLE_COLUMNS.DATE;
+            return {...prevState, sortBy: selectedSortBy, sortOrder: isSwitchingToDate ? CONST.SEARCH.SORT_ORDER.ASC : selectedSortOrder};
+        });
     };
 
     // Maps each transactionID to its transaction-thread report ID, so each row can pass it to the RBR, letting rows
