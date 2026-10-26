@@ -3,7 +3,7 @@ import Log from '@libs/Log';
 import Navigation from '@libs/Navigation/Navigation';
 import type {PlatformStackRouteProp} from '@libs/Navigation/PlatformStackNavigation/types';
 import {isCurrentActionUnread, isReportPreviewAction} from '@libs/ReportActionsUtils';
-import {getReportNotificationPreference, isArchivedNonExpenseReport, isUnread} from '@libs/ReportUtils';
+import {getReportLastVisibleActionCreated, getReportNotificationPreference, isArchivedNonExpenseReport, isUnread} from '@libs/ReportUtils';
 import {getLHNUnreadState} from '@libs/SidebarUtils';
 import Visibility from '@libs/Visibility';
 
@@ -152,6 +152,10 @@ function useMarkAsRead({
     const lastAction = sortedVisibleReportActions.at(0);
     const isReportUnreadValue = isUnread(report, transactionThreadReport, isReportArchived, derivedIsEmptyReport) || (!!lastAction && isCurrentActionUnread(report, lastAction));
 
+    // markCommentAsUnread sets lastReadTime to the marked action's created - 1ms, so a marker read past stops holding.
+    const lastVisibleActionCreated = getReportLastVisibleActionCreated(report, transactionThreadReport);
+    const hasLiveManualUnreadMarker = !!report?.manuallyMarkedUnreadReportActionID && !!lastVisibleActionCreated && (report?.lastReadTime ?? '') < lastVisibleActionCreated;
+
     const [instanceID] = useState(() => {
         lastInstanceID += 1;
         return lastInstanceID;
@@ -239,6 +243,11 @@ function useMarkAsRead({
             return;
         }
 
+        // A deliberate mark-as-unread outranks the automatic read receipt.
+        if (hasLiveManualUnreadMarker) {
+            return;
+        }
+
         readNewestAction(reportID, isReportActionsLoaded);
 
         // `hasNewerActions` and `isScrolledToEnd` are read but intentionally left out of the deps: this effect is the
@@ -264,6 +273,12 @@ function useMarkAsRead({
         }
 
         if (shouldRequireScreenFocus && !isFocused) {
+            return;
+        }
+
+        // A deliberate mark-as-unread outranks the automatic read receipt. This sits above the skipped-read latch so
+        // `completeSkippedMarkAsRead` cannot read the report later either.
+        if (hasLiveManualUnreadMarker) {
             return;
         }
 
@@ -331,6 +346,11 @@ function useMarkAsRead({
         );
 
         if (!isArchivedReport && (!hasNewMessagesInView || !hasUnreadReportAction)) {
+            return;
+        }
+
+        // A deliberate mark-as-unread outranks the automatic read receipt.
+        if (hasLiveManualUnreadMarker) {
             return;
         }
 

@@ -564,6 +564,19 @@ describe('OnyxUpdateManager', () => {
 
         expect(App.getMissingOnyxUpdates).toHaveBeenCalledTimes(2);
         expect(App.reconnectApp).toHaveBeenCalledTimes(2);
+
+        // The incremental reconnect fired from the same cursor did not advance the client either, so this stall takes
+        // the last rung of the ladder: a full ReconnectApp, the one response that applies despite the stale cursor.
+        expect(App.reconnectApp).toHaveBeenLastCalledWith();
+
+        // That rung is bounded to once per cursor value, so a further stall from cursor 1 falls back to incremental.
+        const laterDateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => new Date().getTime() + 122000);
+        OnyxUpdateManager.handleMissingOnyxUpdates(update7);
+        await OnyxUpdateManager.queryPromise;
+        laterDateNowSpy.mockRestore();
+
+        expect(App.getMissingOnyxUpdates).toHaveBeenCalledTimes(3);
+        expect(App.reconnectApp).toHaveBeenCalledTimes(3);
         expect(App.reconnectApp).toHaveBeenLastCalledWith(1);
     });
 

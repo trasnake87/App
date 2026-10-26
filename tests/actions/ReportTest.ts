@@ -13000,4 +13000,49 @@ describe('actions/Report', () => {
             expect(await flagAs(WHISPER_TARGET_ACCOUNT_ID + 1, 97020)).toBe('2027-04-01 10:00:00.000');
         });
     });
+
+    describe('markCommentAsUnread from the LHN row menu', () => {
+        it('records the marked action id and lets an explicit mark-as-read retire it', async () => {
+            // Given a read report whose only action is another user's comment
+            global.fetch = TestHelper.createGlobalFetchMock();
+            const REPORT_ID = 'lhnMarkAsUnread';
+            const OTHER_USER_ACCOUNT_ID = 2;
+            const reportActions: OnyxTypes.ReportActions = {
+                100: {
+                    actionName: CONST.REPORT.ACTIONS.TYPE.ADD_COMMENT,
+                    reportActionID: '100',
+                    actorAccountID: OTHER_USER_ACCOUNT_ID,
+                    created: '2026-10-20 10:00:00.000',
+                    message: [{type: 'COMMENT', html: 'Other User Comment', text: 'Other User Comment'}],
+                } as OnyxTypes.ReportAction,
+            };
+            await Onyx.set(`${ONYXKEYS.COLLECTION.REPORT}${REPORT_ID}`, {
+                reportID: REPORT_ID,
+                lastVisibleActionCreated: '2026-10-20 10:00:00.000',
+                lastReadTime: '2026-10-20 11:00:00.000',
+            });
+            await Onyx.set(`${ONYXKEYS.COLLECTION.REPORT_ACTIONS}${REPORT_ID}`, reportActions);
+            await waitForBatchedUpdates();
+
+            // When the LHN row menu marks it unread, which opens its context menu with reportActionID '-1' and so
+            // resolves to no reportAction at all
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- BaseReportActionContextMenu resolves the LHN row's '-1' reportActionID to undefined, which the signature does not model
+            Report.markCommentAsUnread(REPORT_ID, reportActions, undefined as unknown as OnyxTypes.ReportAction, 1, false);
+            await waitForBatchedUpdates();
+
+            // Then Onyx records the same action the MarkAsUnread parameter reports, so the deliberate unread is
+            // distinguishable from a report that merely holds new messages
+            let report = await getOnyxValue(`${ONYXKEYS.COLLECTION.REPORT}${REPORT_ID}` as const);
+            expect(report?.lastReadTime).toBe('2026-10-20 09:59:59.999');
+            expect(report?.manuallyMarkedUnreadReportActionID).toBe('100');
+
+            // When the user explicitly marks the report as read again
+            Report.readNewestAction(REPORT_ID, true, true);
+            await waitForBatchedUpdates();
+
+            // Then the marker is retired, so the New line stops pinning the divider to action '100'
+            report = await getOnyxValue(`${ONYXKEYS.COLLECTION.REPORT}${REPORT_ID}` as const);
+            expect(report?.manuallyMarkedUnreadReportActionID).toBeFalsy();
+        });
+    });
 });

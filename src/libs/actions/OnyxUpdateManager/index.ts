@@ -69,9 +69,15 @@ let isFetchingForPendingUpdates = false;
 // off, until the client advances or a minute passes; then the normal flow fetches and escalates again.
 let stalledFetch: {clientUpdateID: number; time: number} | undefined;
 
+// The last rung of the ladder. Kept outside `stalledFetch` because the back-off window clears that, which would make
+// every later stall from the same cursor look like the first one and escalate incrementally again. Bounded to one full
+// ReconnectApp per cursor value: a cursor that moved starts the ladder over.
+let escalatedFetch: {clientUpdateID: number; hasEscalatedToFullReconnect: boolean} | undefined;
+
 const resetDeferralLogicVariables = () => {
     clearDeferredOnyxUpdates({shouldUnpauseSequentialQueue: false});
     stalledFetch = undefined;
+    escalatedFetch = undefined;
 };
 
 function escalateIfFetchStalled(response: Awaited<ReturnType<typeof getMissingOnyxUpdates>>, lastUpdateIDFromClient: number): boolean {
@@ -83,6 +89,15 @@ function escalateIfFetchStalled(response: Awaited<ReturnType<typeof getMissingOn
 
     if (getPersistedLastUpdateID() > lastUpdateIDFromClient) {
         return false;
+    }
+
+    if (escalatedFetch?.clientUpdateID !== lastUpdateIDFromClient) {
+        escalatedFetch = {clientUpdateID: lastUpdateIDFromClient, hasEscalatedToFullReconnect: false};
+    } else if (!escalatedFetch.hasEscalatedToFullReconnect) {
+        escalatedFetch.hasEscalatedToFullReconnect = true;
+        Log.alert('[OnyxUpdateManager] The incremental ReconnectApp did not advance the client either, escalating to a full ReconnectApp', {lastUpdateIDFromClient});
+        reconnectApp();
+        return true;
     }
 
     stalledFetch = {clientUpdateID: lastUpdateIDFromClient, time: Date.now()};
