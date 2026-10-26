@@ -6,6 +6,8 @@ import type {State} from '@libs/Navigation/types';
 import type {DynamicRouteSuffix, Route} from '@src/ROUTES';
 import ROUTES from '@src/ROUTES';
 
+import {useEffect, useRef} from 'react';
+
 import useRootNavigationState from './useRootNavigationState';
 
 /**
@@ -30,17 +32,28 @@ function useDynamicBackPath(dynamicRouteSuffix: DynamicRouteSuffix, isEnabled = 
         return getPathFromState(state as State);
     });
 
+    const pathWithoutLeadingSlash = (path ?? '').replaceAll(/^\/+/g, '');
+    const match = findAllMatchingDynamicSuffixes(pathWithoutLeadingSlash).find((m) => m.pattern === dynamicRouteSuffix);
+    const matchedBackPath = match ? getPathWithoutDynamicSuffix(match.pathUsedForMatching, match.actualSuffix, match.pattern) : undefined;
+
+    // The active path stops carrying our suffix as soon as another screen is stacked over this one, and
+    // callers that navigate after that (deferred/on-focus) must not be handed the covering screen's route.
+    const lastMatchedBackPath = useRef<Route | undefined>(undefined);
+    useEffect(() => {
+        if (!matchedBackPath) {
+            return;
+        }
+        lastMatchedBackPath.current = matchedBackPath;
+    }, [matchedBackPath]);
+
     if (!path) {
         return ROUTES.HOME;
     }
 
-    const pathWithoutLeadingSlash = path.replaceAll(/^\/+/g, '');
-    const match = findAllMatchingDynamicSuffixes(pathWithoutLeadingSlash).find((m) => m.pattern === dynamicRouteSuffix);
-    if (match) {
-        return getPathWithoutDynamicSuffix(match.pathUsedForMatching, match.actualSuffix, match.pattern);
-    }
-
-    return pathWithoutLeadingSlash as Route;
+    // The ref is only ever written from the effect above and read as a fallback for a path that cannot produce a back
+    // path of our own, so it never needs to drive a render of its own.
+    // eslint-disable-next-line react-hooks/refs
+    return matchedBackPath ?? lastMatchedBackPath.current ?? (pathWithoutLeadingSlash as Route);
 }
 
 export default useDynamicBackPath;

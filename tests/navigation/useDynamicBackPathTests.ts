@@ -157,6 +157,24 @@ describe('useDynamicBackPath', () => {
         expect(result.current).toBe('r/123/other/456/abc');
     });
 
+    it('should keep the last matched back path when another screen covers this one', () => {
+        // Given a path that carries the caller's suffix, resolved while its own screen is focused
+        const path = DYNAMIC_ROUTES.VERIFY_ACCOUNT.path;
+        getPathFromStateMock.mockReturnValue(`settings/wallet/${path}`);
+
+        const {result, rerender} = renderHook(() => useDynamicBackPath(path));
+
+        expect(result.current).toBe('settings/wallet');
+
+        // When another screen is stacked over it, so the focused path no longer carries the suffix
+        getPathFromStateMock.mockReturnValue(`test-tools?backTo=settings/wallet/${path}`);
+        rerender({});
+
+        // Then the previously matched back path is returned instead of the covering screen's route,
+        // so a deferred goBack still pops to the list rather than replacing this screen.
+        expect(result.current).toBe('settings/wallet');
+    });
+
     describe('optional path params', () => {
         const OPT_TRAILING_PATH = 'opt-page/:id?';
         const OPT_MIDDLE_PATH = 'wrap/:p?/end';
