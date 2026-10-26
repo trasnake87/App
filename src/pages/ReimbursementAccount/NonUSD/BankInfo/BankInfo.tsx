@@ -7,6 +7,7 @@ import useOnyx from '@hooks/useOnyx';
 import useSubPage from '@hooks/useSubPage';
 
 import Navigation from '@libs/Navigation/Navigation';
+import {hasInProgressVBBA} from '@libs/ReimbursementAccountUtils';
 
 import NotFoundPage from '@pages/ErrorPage/NotFoundPage';
 import type NonUSDPageProps from '@pages/ReimbursementAccount/NonUSD/types';
@@ -54,6 +55,15 @@ function BankInfo({onBackButtonPress, onSubmit, policyID, stepNames, backTo}: No
     const isSubmittingRef = useRef(false);
 
     const submit = () => {
+        // Back from Business info lands on this step's Confirmation page, so Confirm can be pressed again once the
+        // account exists. A second BankAccount_CreateCorpay for the same account is rejected by the backend, and since
+        // the command writes no error of its own that raw message is what lands above Confirm. hasInProgressVBBA is
+        // how the rest of the app recognises an already created non-USD account, so move on instead of recreating it.
+        if (hasInProgressVBBA(reimbursementAccount?.achData, true, policyID)) {
+            onSubmit();
+            return;
+        }
+
         const {formFields, isLoading, isSuccess, ...corpayData} = corpayFields ?? {};
 
         isSubmittingRef.current = true;
