@@ -1,7 +1,7 @@
 import type {LocaleContextProps} from '@components/LocaleContextProvider';
 
 import {hasExplicitFlagAmount} from '@libs/FlagForReviewRulesUtils';
-import {getCorrectedAutoReportingFrequency, getReimbursementChoice, getWorkflowApprovalsUnavailable} from '@libs/PolicyUtils';
+import {arePolicyRulesEnabled, getCorrectedAutoReportingFrequency, getReimbursementChoice, getWorkflowApprovalsUnavailable} from '@libs/PolicyUtils';
 import {categoryHasAnyRequireFieldsRule} from '@libs/RequireFieldsRulesUtils';
 
 import {getAutoReportingFrequencyDisplayNames} from '@pages/workspace/workflows/WorkspaceAutoReportingFrequencyPage';
@@ -13,6 +13,11 @@ import type {Policy, PolicyCategories} from '@src/types/onyx';
 import type {ConnectionName} from '@src/types/onyx/Policy';
 
 function getWorkspaceRules(policy: Policy | undefined, translate: LocaleContextProps['translate'], policyCategories?: PolicyCategories) {
+    // Rules is a feature toggle: with it off there is nothing under Rules to copy, so don't advertise the
+    // fields that survive disabling Rules (prohibited expense defaults, glCodes, disabledFields).
+    if (!arePolicyRulesEnabled(policy, policyCategories)) {
+        return null;
+    }
     const workflowApprovalsUnavailable = getWorkflowApprovalsUnavailable(policy);
     const autoPayApprovedReportsUnavailable =
         !policy?.areWorkflowsEnabled || getReimbursementChoice(policy) !== CONST.POLICY.REIMBURSEMENT_CHOICES.REIMBURSEMENT_YES || !policy?.achAccount?.bankAccountID;

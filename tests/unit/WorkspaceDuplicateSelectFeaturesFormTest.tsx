@@ -86,6 +86,7 @@ function createSourcePolicy(hasWorkspaceRules: boolean): Policy {
     return {
         ...createRandomPolicy(Number(POLICY_ID), CONST.POLICY.TYPE.CORPORATE),
         preventSelfApproval: false,
+        areRulesEnabled: true,
         maxExpenseAmountNoReceipt: CONST.DISABLED_MAX_EXPENSE_VALUE,
         maxExpenseAmount: CONST.DISABLED_MAX_EXPENSE_VALUE,
         maxExpenseAge: CONST.DISABLED_MAX_EXPENSE_VALUE,
@@ -93,8 +94,8 @@ function createSourcePolicy(hasWorkspaceRules: boolean): Policy {
     };
 }
 
-async function renderForm(hasWorkspaceRules: boolean) {
-    await Onyx.set(`${ONYXKEYS.COLLECTION.POLICY}${POLICY_ID}`, createSourcePolicy(hasWorkspaceRules));
+async function renderForm(hasWorkspaceRules: boolean, policyOverrides?: Partial<Policy>) {
+    await Onyx.set(`${ONYXKEYS.COLLECTION.POLICY}${POLICY_ID}`, {...createSourcePolicy(hasWorkspaceRules), ...policyOverrides});
     await Onyx.set(`${ONYXKEYS.COLLECTION.RULE}merchantRule`, MERCHANT_RULE);
     await Onyx.set(ONYXKEYS.RAM_ONLY_HAS_RULES_DATA_BEEN_FETCHED, true);
     await Onyx.set(ONYXKEYS.DUPLICATE_WORKSPACE, {name: 'Duplicate', policyID: TARGET_POLICY_ID});
@@ -192,6 +193,23 @@ describe('WorkspaceDuplicateSelectFeaturesForm Rules and Merchant rules', () => 
         // Then the workspace-level rules are still copied without the merchant rules, because Rules doesn't depend on Merchant rules
         expect(getRow('rules')?.isSelected).toBe(true);
         expect(getSentParts()).toMatchObject({expenses: true, codingRules: false});
+    });
+
+    it('hides Rules when the source has the Rules feature turned off, even though Rules fields survive the toggle', async () => {
+        // Given a source whose Rules feature is off but which still carries the fields that disabling Rules leaves behind
+        await renderForm(false, {
+            areRulesEnabled: false,
+            glCodes: true,
+            prohibitedExpenses: CONST.POLICY.DEFAULT_PROHIBITED_EXPENSES,
+            disabledFields: {defaultBillable: true, reimbursable: false},
+        });
+
+        // When the admin continues
+        pressContinue();
+
+        // Then no Rules row is offered and Rules isn't copied, so the duplicate never shows a Rules menu row
+        expect(getRow('rules')).toBeUndefined();
+        expect(getSentParts()).toMatchObject({expenses: false});
     });
 
     it('copies merchant rules on their own when the source has no workspace-level rules', async () => {
