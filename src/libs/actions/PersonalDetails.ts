@@ -37,6 +37,7 @@ import type {Address} from '@src/types/onyx/PrivatePersonalDetails';
 
 import type {OnyxEntry, OnyxUpdate} from 'react-native-onyx';
 
+import {Image} from 'expo-image';
 import Onyx from 'react-native-onyx';
 
 type PersonalDetailsFormValues = {
@@ -366,6 +367,16 @@ function isDefaultAvatarResult(file: File | CustomRNImageManipulatorResult | Def
 }
 
 /**
+ * An avatar change replaces the image behind a URL the backend keeps stable, and the native image
+ * caches are keyed by that URL, so they would keep answering with the previous photo. No-op on web,
+ * where the browser revalidates the CDN response itself.
+ */
+function clearCachedAvatarImages() {
+    Image.clearMemoryCache();
+    Image.clearDiskCache();
+}
+
+/**
  * Updates the user's avatar image
  */
 function updateAvatar(
@@ -415,6 +426,8 @@ function updateAvatar(
     ];
 
     const parameters: UpdateUserAvatarParams = isDefaultAvatarResult(file) ? {customExpensifyAvatarID: file.customExpensifyAvatarID} : {file};
+
+    clearCachedAvatarImages();
 
     API.write(WRITE_COMMANDS.UPDATE_USER_AVATAR, parameters, {
         optimisticData,
@@ -483,6 +496,10 @@ function updateAvatarStyle(
 
     const parameters: UpdateUserAvatarParams = {color};
 
+    if (willClearAvatar) {
+        clearCachedAvatarImages();
+    }
+
     API.write(WRITE_COMMANDS.UPDATE_USER_AVATAR, parameters, {
         optimisticData,
         successData,
@@ -522,6 +539,8 @@ function deleteAvatar(currentUserPersonalDetails: Pick<CurrentUserPersonalDetail
             },
         }),
     ];
+
+    clearCachedAvatarImages();
 
     API.write(WRITE_COMMANDS.DELETE_USER_AVATAR, null, {
         optimisticData,

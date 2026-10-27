@@ -11,6 +11,7 @@ import ONYXKEYS from '@src/ONYXKEYS';
 import type {CurrentUserPersonalDetails} from '@src/types/onyx/PersonalDetails';
 import type {Address} from '@src/types/onyx/PrivatePersonalDetails';
 
+import {Image} from 'expo-image';
 import Onyx from 'react-native-onyx';
 
 import * as PersonalDetailsActions from '../../src/libs/actions/PersonalDetails';
@@ -32,6 +33,11 @@ const mockPersonalDetailsUtils = jest.mocked(PersonalDetailsUtils);
 
 jest.mock('@libs/UserAvatarUtils');
 const mockUserAvatarUtils = jest.mocked(UserAvatarUtils);
+
+jest.mock('expo-image', () => ({
+    Image: {clearMemoryCache: jest.fn(), clearDiskCache: jest.fn()},
+}));
+const mockImage = jest.mocked(Image);
 
 describe('actions/PersonalDetails', () => {
     beforeAll(() => {
@@ -926,6 +932,34 @@ describe('actions/PersonalDetails', () => {
                     },
                 ],
             });
+        });
+
+        it('should clear the native image caches before writing, so the replaced photo cannot be served from them again', async () => {
+            // Given a user whose avatar is a stored photo behind a URL the backend keeps stable across avatar changes
+            const currentUserPersonalDetail: Pick<CurrentUserPersonalDetails, 'fallbackIcon' | 'avatar' | 'accountID' | 'email' | 'firstName' | 'lastName'> = {
+                avatar: 'https://cdn.example.com/images/avatars/123.png',
+                fallbackIcon: 'fallback-icon.jpg',
+                accountID: 123,
+                email: 'test@test.te',
+                firstName: 'Jane',
+                lastName: 'Smith',
+            };
+
+            mockUserAvatarUtils.getDefaultAvatarURL.mockReturnValue('https://d2k5nsl2zxldvw.cloudfront.net/images/avatars/default-avatar_7.png');
+
+            // When the avatar is deleted
+            PersonalDetailsActions.deleteAvatar(currentUserPersonalDetail);
+            await waitForBatchedUpdates();
+
+            // Then both image caches are dropped, because they are keyed by that URL alone and would otherwise keep
+            // answering with the removed photo once a replacement is uploaded to the same URL
+            expect(mockImage.clearMemoryCache).toHaveBeenCalledTimes(1);
+            expect(mockImage.clearDiskCache).toHaveBeenCalledTimes(1);
+
+            // Then the eviction happens before the request is queued, so a queued offline removal cannot leave a stale entry behind
+            const writeOrder = mockAPI.write.mock.invocationCallOrder.at(0) ?? Number.NEGATIVE_INFINITY;
+            expect(mockImage.clearMemoryCache.mock.invocationCallOrder.at(0)).toBeLessThan(writeOrder);
+            expect(mockImage.clearDiskCache.mock.invocationCallOrder.at(0)).toBeLessThan(writeOrder);
         });
 
         it('should handle null fallbackIcon in failure data', async () => {
