@@ -6,6 +6,7 @@ import PressableWithoutFeedback from '@components/Pressable/PressableWithoutFeed
 import EducationalTooltip from '@components/Tooltip/EducationalTooltip';
 import Tooltip from '@components/Tooltip/PopoverAnchorTooltip';
 
+import useAnchorLayoutObserver from '@hooks/useAnchorLayoutObserver';
 import {useMemoizedLazyExpensifyIcons} from '@hooks/useLazyAsset';
 import useLocalize from '@hooks/useLocalize';
 import useOnyx from '@hooks/useOnyx';
@@ -145,6 +146,12 @@ function ThreeDotsMenu({
             setPosition(value);
         });
     }, [windowWidth, windowHeight, shouldSelfPosition, getMenuPosition, isPopupMenuVisible]);
+
+    useAnchorLayoutObserver(buttonRef, isPopupMenuVisible, () => {
+        getMenuPosition?.().then((value) => {
+            setPosition((prev) => (prev?.horizontal === value.horizontal && prev?.vertical === value.vertical ? prev : value));
+        });
+    });
 
     const getIconFill = () => {
         if (!shouldChangeFillOnOpen) {
