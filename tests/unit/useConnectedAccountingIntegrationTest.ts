@@ -102,6 +102,25 @@ const zohoBooksPolicy: Policy = {
     } as Policy['connections'],
 };
 
+const netSuitePolicy: Policy = {
+    ...policy,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- The hook only reads the subsidiary list and the selected subsidiary, so the rest of the connection config is left out.
+    connections: {
+        [CONST.POLICY.CONNECTIONS.NAME.NETSUITE]: {
+            verified: true,
+            options: {
+                config: {subsidiary: 'Parent Company', subsidiaryID: '1'},
+                data: {
+                    subsidiaryList: [
+                        {name: 'Parent Company', internalID: '1', country: 'US', isElimination: false},
+                        {name: 'Sub Two', internalID: '2', country: 'US', isElimination: false},
+                    ],
+                },
+            },
+        },
+    } as Policy['connections'],
+};
+
 const campfirePolicy: Policy = {
     ...policy,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- The hook only reads the entity list and the selected entity, so the rest of the connection config is left out.
@@ -172,7 +191,19 @@ describe('useConnectedAccountingIntegration', () => {
             expect(descriptions).toContain('workspace.zohoBooks.organization');
         });
 
-        it('should drop the integration-specific row for other connectors when the last sync failed', () => {
+        it('should keep the NetSuite subsidiary row when the last sync failed', () => {
+            // Given a workspace connected to NetSuite with two subsidiaries whose last sync failed
+            mockConnectedIntegration = CONST.POLICY.CONNECTIONS.NAME.NETSUITE;
+            mockSynchronizationError = 'Sync failed';
+
+            // When the connected integration's settings rows are built
+            const descriptions = getSettingsMenuItemDescriptions(netSuitePolicy);
+
+            // Then the subsidiary row is still shown, because repointing the connection at the right subsidiary is how an admin fixes the failing sync
+            expect(descriptions).toContain('workspace.netsuite.subsidiary');
+        });
+
+        it('should keep the integration-specific row for other connectors when the last sync failed', () => {
             // Given a workspace connected to Campfire with two entities whose last sync failed
             mockConnectedIntegration = CONST.POLICY.CONNECTIONS.NAME.CAMPFIRE;
             mockSynchronizationError = 'Sync failed';
@@ -180,8 +211,20 @@ describe('useConnectedAccountingIntegration', () => {
             // When the connected integration's settings rows are built
             const descriptions = getSettingsMenuItemDescriptions(campfirePolicy);
 
-            // Then the entity row is hidden, since only Zoho Books keeps its row through a sync error
-            expect(descriptions).not.toContain('workspace.campfire.entity');
+            // Then the entity row is still shown, since every connector now keeps its selector through a sync error
+            expect(descriptions).toContain('workspace.campfire.entity');
+        });
+
+        it('should hide the NetSuite subsidiary row when no subsidiary has been selected yet', () => {
+            // Given a NetSuite connection whose first sync never landed, so no subsidiary is stored
+            mockConnectedIntegration = CONST.POLICY.CONNECTIONS.NAME.NETSUITE;
+            mockSynchronizationError = 'Sync failed';
+
+            // When the connected integration's settings rows are built
+            const descriptions = getSettingsMenuItemDescriptions({...netSuitePolicy, connections: undefined});
+
+            // Then no subsidiary row is shown, because the per-connector emptiness check still drops a row with nothing to display
+            expect(descriptions).not.toContain('workspace.netsuite.subsidiary');
         });
     });
 });

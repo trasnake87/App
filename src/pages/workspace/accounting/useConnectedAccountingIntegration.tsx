@@ -478,7 +478,6 @@ function useConnectedAccountingIntegration(policy: OnyxEntry<Policy>, {menuItemW
         }
     };
     const integrationSpecificMenuItems = getIntegrationSpecificMenuItems();
-    const shouldKeepIntegrationSpecificMenuItemOnSyncError = connectedIntegration === CONST.POLICY.CONNECTIONS.NAME.ZOHO_BOOKS;
 
     const getConnectionDetails = () => {
         if (!connectedIntegration || !policyID) {
@@ -571,10 +570,10 @@ function useConnectedAccountingIntegration(policy: OnyxEntry<Policy>, {menuItemW
               ]
             : [];
 
+        // The entity/subsidiary/organization selector stays available through a failed sync: the wrong
+        // selection is often what broke the sync, and OldDot keeps the selector next to the error too.
         const settingsMenuItems: MenuItemData[] = [
-            ...(isEmptyObject(integrationSpecificMenuItems) || (shouldShowSynchronizationError && !shouldKeepIntegrationSpecificMenuItemOnSyncError) || !hasAccountingConnection
-                ? []
-                : [integrationSpecificMenuItems]),
+            ...(isEmptyObject(integrationSpecificMenuItems) || !hasAccountingConnection ? [] : [integrationSpecificMenuItems]),
             ...(!hasAccountingConnection || !isConnectionVerified ? [] : configurationOptions),
         ];
         return {icon: integrationData?.icon, title: integrationData?.title, connectionMessage, settingsMenuItems};
