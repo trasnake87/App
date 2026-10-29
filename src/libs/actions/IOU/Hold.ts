@@ -148,15 +148,20 @@ function putOnHold({
         const isExpenseReportLocal = isExpenseReport(transactionReport);
         const coefficient = isExpenseReportLocal ? -1 : 1;
         const transactionAmount = getAmount(transaction, isExpenseReportLocal) * coefficient;
+        // A report that never received any unheld column has every transaction unheld, so its own totals are the
+        // right starting point — seeding from 0 instead would store a negative unheld amount.
+        const hasUnheldColumns =
+            transactionReport.unheldTotal !== undefined || transactionReport.unheldReimbursableTotal !== undefined || transactionReport.unheldNonReimbursableTotal !== undefined;
+        const previousUnheldNonReimbursableTotal = hasUnheldColumns ? (transactionReport.unheldNonReimbursableTotal ?? 0) : (transactionReport.nonReimbursableTotal ?? 0);
+        const previousUnheldReimbursableTotal = hasUnheldColumns ? getUnheldReimbursableTotal(transactionReport) : getReimbursableTotal(transactionReport);
+        const previousUnheldTotal = transactionReport.unheldTotal ?? previousUnheldReimbursableTotal + previousUnheldNonReimbursableTotal;
         optimisticData.push({
             onyxMethod: Onyx.METHOD.MERGE,
             key: `${ONYXKEYS.COLLECTION.REPORT}${transactionReport.reportID}`,
             value: {
-                unheldTotal: (transactionReport.unheldTotal ?? 0) - transactionAmount,
-                unheldNonReimbursableTotal: !transaction?.reimbursable
-                    ? (transactionReport.unheldNonReimbursableTotal ?? 0) - transactionAmount
-                    : transactionReport.unheldNonReimbursableTotal,
-                unheldReimbursableTotal: transaction?.reimbursable ? getUnheldReimbursableTotal(transactionReport) - transactionAmount : getUnheldReimbursableTotal(transactionReport),
+                unheldTotal: previousUnheldTotal - transactionAmount,
+                unheldNonReimbursableTotal: !transaction?.reimbursable ? previousUnheldNonReimbursableTotal - transactionAmount : previousUnheldNonReimbursableTotal,
+                unheldReimbursableTotal: transaction?.reimbursable ? previousUnheldReimbursableTotal - transactionAmount : previousUnheldReimbursableTotal,
             },
         });
     }
@@ -911,7 +916,11 @@ function getReportFromHoldRequestsOnyxData({
     // Held transactions just moved out, leaving total/nonReimbursableTotal stale on this report —
     // offline consumers (e.g. the Pay button) would read the wrong amount until server reconciles.
     // unheldTotal stays as-is: every remaining transaction is unheld, so it already equals the new total.
-    const shouldUpdateOriginalReportTotals = !shouldMoveScanFailedTransactions && holdTransactions.length > 0 && iouReport?.unheldTotal !== undefined;
+    const remainingNonReimbursableTotal = iouReport?.unheldNonReimbursableTotal ?? 0;
+    const remainingReimbursableTotal = getUnheldReimbursableTotal(iouReport);
+    const derivedRemainingTotal = remainingReimbursableTotal + remainingNonReimbursableTotal;
+    const hasKnownRemainingTotals = iouReport?.unheldTotal !== undefined || derivedRemainingTotal !== 0;
+    const shouldUpdateOriginalReportTotals = !shouldMoveScanFailedTransactions && holdTransactions.length > 0 && hasKnownRemainingTotals;
 
     const optimisticData: Array<OnyxUpdate<typeof ONYXKEYS.COLLECTION.REPORT | typeof ONYXKEYS.COLLECTION.REPORT_ACTIONS | typeof ONYXKEYS.COLLECTION.TRANSACTION>> = [
         {
@@ -972,9 +981,9 @@ function getReportFromHoldRequestsOnyxData({
             onyxMethod: Onyx.METHOD.MERGE,
             key: `${ONYXKEYS.COLLECTION.REPORT}${iouReport?.reportID}`,
             value: {
-                total: iouReport?.unheldTotal ?? 0,
-                nonReimbursableTotal: iouReport?.unheldNonReimbursableTotal ?? 0,
-                reimbursableTotal: getUnheldReimbursableTotal(iouReport),
+                total: iouReport?.unheldTotal ?? derivedRemainingTotal,
+                nonReimbursableTotal: remainingNonReimbursableTotal,
+                reimbursableTotal: remainingReimbursableTotal,
             },
         });
     }

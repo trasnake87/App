@@ -1259,6 +1259,48 @@ describe('actions/IOU/Hold', () => {
                 });
         });
 
+        test('should optimistically update original report totals from the fresh unheld fields when unheldTotal is missing', () => {
+            // Given a report whose local copy carries the freshly computed unheld fields but no legacy unheldTotal column,
+            // which is the shape the app produces itself and the state the reporter hit after approving only the unheld expenses
+            const {chatReport, iouReport, reportCollection, transactionCollection, actionCollection} = buildScenario({
+                total: 300,
+                nonReimbursableTotal: 50,
+                unheldTotal: undefined,
+                unheldReimbursableTotal: 170,
+                unheldNonReimbursableTotal: 30,
+                heldAmount: 100,
+            });
+
+            return waitForBatchedUpdates()
+                .then(() => Onyx.multiSet({...reportCollection, ...transactionCollection, ...actionCollection}))
+                .then(() => {
+                    // When the held transactions are moved out to a new report
+                    const result = getReportFromHoldRequestsOnyxData({
+                        chatReport,
+                        iouReport,
+                        recipient: {accountID: 1},
+                        policy: undefined,
+                        delegateAccountID: undefined,
+                        isASAPSubmitBetaEnabled: false,
+                        getCurrencyDecimals: getCurrencyDecimalsLocal,
+                        rules: undefined,
+                    });
+                    const totalsUpdate = result.optimisticData.find((entry) => entry.onyxMethod === Onyx.METHOD.MERGE && entry.key === `${ONYXKEYS.COLLECTION.REPORT}${iouReport.reportID}`);
+                    const restorationEntries = result.failureData.filter(
+                        (entry) => entry.onyxMethod === Onyx.METHOD.MERGE && entry.key === `${ONYXKEYS.COLLECTION.REPORT}${iouReport.reportID}`,
+                    );
+                    const totalsRestore = restorationEntries.find((entry) => {
+                        const value = entry.value;
+                        return isObject(value) && (hasDefinedProperty(value, 'total') || hasDefinedProperty(value, 'nonReimbursableTotal'));
+                    });
+
+                    // Then the source report's totals are derived from the unheld fields instead of staying stale,
+                    // and the rollback still restores the pre-move totals
+                    expect(totalsUpdate?.value).toEqual({total: 200, nonReimbursableTotal: 30, reimbursableTotal: 170});
+                    expect(totalsRestore?.value).toEqual({total: 300, nonReimbursableTotal: 50, reimbursableTotal: 250});
+                });
+        });
+
         const buildScanFailedTransaction = (reportID: string, amount: number) => {
             const transaction = buildOptimisticTransaction({
                 transactionParams: {amount, currency: 'USD', reportID},
