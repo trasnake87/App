@@ -69,7 +69,7 @@ function ChatTransactionPreview({action, reportID, chatReport, iouReport, should
                 transactionPreviewWidth={reportPreviewStyles.transactionPreviewStandaloneStyle.width}
                 onPreviewPressed={() => {
                     if (shouldShowSplitPreview) {
-                        Navigation.navigate(createDynamicRoute(DYNAMIC_ROUTES.SPLIT_BILL_DETAILS.getRoute(action.reportActionID)));
+                        Navigation.navigate(createDynamicRoute(DYNAMIC_ROUTES.SPLIT_BILL_DETAILS.getRoute(action.reportActionID, reportID)));
                         return;
                     }
 
