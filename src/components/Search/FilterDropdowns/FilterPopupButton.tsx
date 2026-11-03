@@ -1,11 +1,10 @@
 import PopoverWithMeasuredContent from '@components/PopoverWithMeasuredContent';
 import withViewportOffsetTop from '@components/withViewportOffsetTop';
 
-import useBottomSafeSafeAreaPaddingStyle from '@hooks/useBottomSafeSafeAreaPaddingStyle';
-import useKeyboardState from '@hooks/useKeyboardState';
 import useOnyx from '@hooks/useOnyx';
 import usePopoverPosition from '@hooks/usePopoverPosition';
 import useResponsiveLayout from '@hooks/useResponsiveLayout';
+import useSafeAreaPaddings from '@hooks/useSafeAreaPaddings';
 import useStyleUtils from '@hooks/useStyleUtils';
 import useThemeStyles from '@hooks/useThemeStyles';
 import useWindowDimensions from '@hooks/useWindowDimensions';
@@ -22,6 +21,8 @@ import {useIsFocused} from '@react-navigation/core';
 import {willAlertModalBecomeVisibleSelector} from '@selectors/Modal';
 import React, {useRef, useState} from 'react';
 import {View} from 'react-native';
+import {useReanimatedKeyboardAnimation} from 'react-native-keyboard-controller';
+import Animated, {useAnimatedStyle} from 'react-native-reanimated';
 
 type PopoverComponentProps = {
     isExpanded: boolean;
@@ -66,12 +67,13 @@ function FilterPopupButton({
     const {isSmallScreenWidth, isInLandscapeMode} = useResponsiveLayout();
     const isFocused = useIsFocused();
     const styles = useThemeStyles();
-    const {isKeyboardActive} = useKeyboardState();
-    // The style is applied inside the popover, which never renders an offline indicator, so don't reserve space for one
-    const bottomSafeAreaPaddingStyle = useBottomSafeSafeAreaPaddingStyle({
-        addBottomSafeAreaPadding: isSmallScreenWidth && !isKeyboardActive,
-        addOfflineIndicatorBottomSafeAreaPadding: false,
-    });
+    const {paddingBottom: safeAreaPaddingBottom} = useSafeAreaPaddings(true);
+    // The bottom-docked sheet makes its own room, frame by frame, for a keyboard raised by a filter's text input, and
+    // pads above the home indicator while it is down. The offline indicator is drawn on the page behind the sheet, so
+    // no room is kept for one.
+    const {height: keyboardOffset} = useReanimatedKeyboardAnimation();
+    const sheetSafeAreaPaddingBottom = isSmallScreenWidth ? safeAreaPaddingBottom : 0;
+    const keyboardRoomStyle = useAnimatedStyle(() => ({paddingBottom: Math.max(sheetSafeAreaPaddingBottom, -keyboardOffset.get())}));
     const StyleUtils = useStyleUtils();
     const {windowHeight} = useWindowDimensions();
     const triggerRef = useRef<ComponentRef<typeof View> | null>(null);
@@ -138,7 +140,6 @@ function FilterPopupButton({
             {isFocused && hasEverExpanded && (
                 <PopoverWithMeasuredContent
                     anchorRef={triggerRef}
-                    avoidKeyboard
                     isVisible={isOverlayVisible}
                     onClose={toggleOverlay}
                     anchorPosition={popoverTriggerPosition}
@@ -160,7 +161,7 @@ function FilterPopupButton({
                     shouldWrapModalChildrenInScrollViewIfBottomDockedInLandscapeMode={false}
                     enableEdgeToEdgeBottomSafeAreaPadding
                 >
-                    <View style={[containerStyles, bottomSafeAreaPaddingStyle]}>{popoverContent}</View>
+                    <Animated.View style={[containerStyles, isSmallScreenWidth ? keyboardRoomStyle : undefined]}>{popoverContent}</Animated.View>
                 </PopoverWithMeasuredContent>
             )}
         </View>
