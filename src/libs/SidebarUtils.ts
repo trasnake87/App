@@ -31,6 +31,7 @@ import type {OnyxCollection, OnyxEntry} from 'react-native-onyx';
 import type {ValueOf} from 'type-fest';
 
 import {startOfDay, subMonths} from 'date-fns';
+import {shallowEqual} from 'fast-equals';
 
 import type {OptionData} from './ReportUtils';
 
@@ -447,13 +448,9 @@ function updateReportsToDisplayInLHN({
             const existingEntry = displayedReports[reportID];
 
             if (hasFlags) {
-                if (
-                    existingEntry !== report ||
-                    existingEntry?.requiresAttention !== requiresAttention ||
-                    existingEntry?.hasErrorsOtherThanFailedReceipt !== hasErrorsOtherThanFailedReceipt ||
-                    existingEntry?.isUnreadReport !== isUnreadReport
-                ) {
-                    getMutableCopy()[reportID] = {...report, requiresAttention, hasErrorsOtherThanFailedReceipt, isUnreadReport};
+                const updatedEntry = {...report, requiresAttention, hasErrorsOtherThanFailedReceipt, isUnreadReport};
+                if (!existingEntry || !shallowEqual(existingEntry, updatedEntry)) {
+                    getMutableCopy()[reportID] = updatedEntry;
                 }
             } else if (existingEntry !== report) {
                 getMutableCopy()[reportID] = report;

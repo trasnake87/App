@@ -4731,6 +4731,56 @@ describe('SidebarUtils', () => {
                 expect(result).not.toBe(displayedReports);
                 expect(result['0']).toBeUndefined();
             });
+
+            it('should return the same reference when a flagged report is rechecked with unchanged inputs', () => {
+                // Given a displayed chat that the LHN flags as requiring attention. Its entry is a spread copy of the
+                // report rather than the report itself, so a reference check alone can never call the entry unchanged.
+                const reportKey = `${ONYXKEYS.COLLECTION.REPORT}1`;
+                const report: Report = {
+                    ...createRandomReport(1, undefined),
+                    type: CONST.REPORT.TYPE.CHAT,
+                    lastReadTime: '2025-01-20 12:30:04.784',
+                    lastVisibleActionCreated: '2025-01-20 12:30:03.784',
+                    participants: {
+                        [CURRENT_USER_ACCOUNT_ID]: {notificationPreference: 'always'},
+                        18921695: {notificationPreference: 'always'},
+                    },
+                };
+                const props = {
+                    reports: {[reportKey]: report} as OnyxCollection<Report>,
+                    updatedReportsKeys: [reportKey],
+                    currentReportId: '1',
+                    isInFocusMode: false,
+                    isDefaultRoomsBetaEnabled: false,
+                    transactions: {},
+                    transactionViolations: {},
+                    reportNameValuePairs: {},
+                    reportAttributes: {
+                        '1': {
+                            reportName: '',
+                            isEmpty: false,
+                            brickRoadStatus: undefined,
+                            requiresAttention: true,
+                            reportErrors: {},
+                        },
+                    } as Record<string, ReportAttributes>,
+                    draftComments: {},
+                    isOffline: false,
+                    currentUserLogin: CURRENT_USER_LOGIN,
+                    currentUserAccountID: CURRENT_USER_ACCOUNT_ID,
+                    guideAccountIDs: [],
+                    conciergeReportID: undefined,
+                };
+
+                // When a pass builds that entry and its own output is fed straight back in with nothing changed
+                const firstPass = SidebarUtils.updateReportsToDisplayInLHN({...props, displayedReports: {}});
+                const secondPass = SidebarUtils.updateReportsToDisplayInLHN({...props, displayedReports: firstPass});
+
+                // Then the second pass hands back the exact object it was given, so the useSidebarOrderedReports effect
+                // sees an unchanged dependency and stops setting state instead of chaining commits into React #185.
+                expect(firstPass[reportKey]?.requiresAttention).toBe(true);
+                expect(secondPass).toBe(firstPass);
+            });
         });
 
         describe('getReportsToDisplayInLHN', () => {
