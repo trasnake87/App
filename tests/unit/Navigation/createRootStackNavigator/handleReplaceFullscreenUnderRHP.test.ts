@@ -1060,6 +1060,36 @@ describe('handleRemoveFullscreenUnderRHP — Share modal host', () => {
     });
 });
 
+describe('handleRemoveFullscreenUnderRHP — duplicate root route keys', () => {
+    it('restores the pre-inserted tab into its own slot when another tab navigator was pushed over the RHP (#103777)', () => {
+        // Given a tab-switch pre-insert under an RHP, with a second tab navigator pushed over that RHP
+        // and another RHP opened on top before anything committed or cancelled the pre-insert
+        mockStubbedParsedState = makeParsedState(INCOMING_SPLIT_ONLY);
+        const preInsertedState = handleReplaceFullscreenUnderRHP(makeExistingState(undefined), makeAction(), CONFIG_OPTIONS, stackRouter);
+        if (!preInsertedState) {
+            throw new Error('Expected the pre-insert to return a navigation state');
+        }
+        const pushedTabRoute = makeRoute(
+            NAVIGATORS.TAB_NAVIGATOR,
+            undefined,
+            {index: 0, routes: [makeRoute(NAVIGATORS.SEARCH_FULLSCREEN_NAVIGATOR, undefined, undefined, 'pushed-search-key')]},
+            'pushed-tab-key',
+        );
+        const secondRHPRoute = makeRoute(NAVIGATORS.RIGHT_MODAL_NAVIGATOR, undefined, undefined, 'second-rhp-key');
+        const stateWithPushedTab = makeStackState([...preInsertedState.routes, pushedTabRoute, secondRHPRoute]);
+
+        // When the user cancels and the teardown action is dispatched
+        const restoredState = handleRemoveFullscreenUnderRHP(stateWithPushedTab, makeRemoveAction(), CONFIG_OPTIONS, stackRouter);
+
+        // Then the saved route lands back in the slot the replace modified and the pushed tab keeps its own, because
+        // writing it over the newer tab instead would leave two root routes sharing a key: useDescriptors pairs cached
+        // routes with state by index, so the second RHP would render against the tab state and throw in
+        // getStateForRouteNamesChange's unguarded preloadedRoutes.filter
+        expect(restoredState?.routes.map((r) => r.key)).toEqual(['tab-nav-key', 'rhp-key', 'pushed-tab-key', 'second-rhp-key']);
+        expect(restoredState?.routes.at(2)).toEqual(pushedTabRoute);
+    });
+});
+
 describe('handleReplaceFullscreenUnderRHP / handleRemoveFullscreenUnderRHP — shouldInsertPreMountBuffer', () => {
     it('inserts the buffer route directly under the RHP on the tab-switch path when shouldInsertPreMountBuffer is true', () => {
         // Given a tab-switch pre-insert that needs protection from native RHP dismissal

@@ -343,11 +343,15 @@ describe('Navigation pre-mount buffer', () => {
     });
 
     it('tab-switch mode: RHP-closed listener restores the original tab route instead of popping a pushed destination', () => {
-        // Given a buffered tab switch that replaced the original tab route beneath the RHP
-        mockOriginalTabRoute = {key: 'tab-origin', name: NAVIGATORS.TAB_NAVIGATOR, state: {index: 0, routes: [{name: SCREENS.INBOX}]} as PartialState<NavigationState>};
+        // Given a buffered tab switch that replaced the original tab route beneath the RHP. The replace keeps the slot's
+        // key, so the saved route carries it too - the restore is looked up by that key.
+        const TAB_KEY = 'tab-1';
+        // Held in a local because the restore clears the saved route, which would leave the assertion below comparing
+        // undefined to undefined.
+        const originalTabRoute = {key: TAB_KEY, name: NAVIGATORS.TAB_NAVIGATOR, state: {index: 0, routes: [{name: SCREENS.INBOX}]} as PartialState<NavigationState>};
+        mockOriginalTabRoute = originalTabRoute;
         mockStateFromPathRoutes = [{key: 'target', name: NAVIGATORS.TAB_NAVIGATOR, state: {index: 0, routes: [{name: SCREENS.SEARCH.ROOT}]} as PartialState<NavigationState>}];
 
-        const TAB_KEY = 'tab-1';
         setRootState([
             {key: TAB_KEY, name: NAVIGATORS.TAB_NAVIGATOR},
             {key: RHP_KEY, name: NAVIGATORS.RIGHT_MODAL_NAVIGATOR},
@@ -376,7 +380,7 @@ describe('Navigation pre-mount buffer', () => {
         expect(mockDispatch).toHaveBeenCalledTimes(1);
         const resetAction = mockDispatch.mock.calls.at(0)?.at(0);
         const restoredTabRoute = resetAction?.payload?.routes?.find((r) => r.key === TAB_KEY);
-        expect(restoredTabRoute).toEqual(mockOriginalTabRoute);
+        expect(restoredTabRoute).toEqual(originalTabRoute);
         expect(resetAction?.payload?.routes?.some((r) => r.key === BUFFER_KEY)).toBe(false);
     });
 
@@ -771,9 +775,13 @@ describe('Navigation pre-mount buffer', () => {
     });
 
     it('recoverFromPreMountBuffer fallback restores the original tab route when the stranded buffer came from a tab switch', () => {
-        // Given a stranded tab-switch buffer with its original tab snapshot still available
+        // Given a stranded tab-switch buffer with its original tab snapshot still available, keyed to the slot the
+        // replace modified (the replace keeps that key, and the restore is looked up by it)
         const TAB_KEY = 'tab-1';
-        mockOriginalTabRoute = {key: 'tab-origin', name: NAVIGATORS.TAB_NAVIGATOR, state: {index: 0, routes: [{name: SCREENS.INBOX}]} as PartialState<NavigationState>};
+        // Held in a local because the restore clears the saved route, which would leave the assertion below comparing
+        // undefined to undefined.
+        const originalTabRoute = {key: TAB_KEY, name: NAVIGATORS.TAB_NAVIGATOR, state: {index: 0, routes: [{name: SCREENS.INBOX}]} as PartialState<NavigationState>};
+        mockOriginalTabRoute = originalTabRoute;
         setRootState([
             {key: TAB_KEY, name: NAVIGATORS.TAB_NAVIGATOR, state: {index: 0, routes: [{name: SCREENS.SEARCH.ROOT}]} as PartialState<NavigationState>},
             {key: BUFFER_KEY, name: SCREENS.PRE_MOUNT_BUFFER},
@@ -786,7 +794,7 @@ describe('Navigation pre-mount buffer', () => {
         expect(mockDispatch).toHaveBeenCalledTimes(1);
         const resetAction = mockDispatch.mock.calls.at(0)?.at(0);
         const restoredTabRoute = resetAction?.payload?.routes?.find((r) => r.key === TAB_KEY);
-        expect(restoredTabRoute).toEqual(mockOriginalTabRoute);
+        expect(restoredTabRoute).toEqual(originalTabRoute);
         expect(resetAction?.payload?.routes?.some((r) => r.key === BUFFER_KEY)).toBe(false);
         expect(mockClearPreInsertedOriginalTabRoute).toHaveBeenCalledTimes(1);
     });
