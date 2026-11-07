@@ -159,6 +159,15 @@ function BaseModal({
         ComposerFocusManager.setReadyToFocus(uniqueModalId);
     };
 
+    // The ready-to-focus promise is registered when the modal becomes visible (onModalWillShow -> saveFocusState), so
+    // release it from the cleanup of an effect with that same lifetime.
+    useEffect(() => {
+        if (!isVisible) {
+            return;
+        }
+        return () => ComposerFocusManager.setReadyToFocus(uniqueModalId);
+    }, [isVisible, uniqueModalId]);
+
     useEffect(() => {
         let removeOnCloseListener: () => void;
         if (isVisible) {

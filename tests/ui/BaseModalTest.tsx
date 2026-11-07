@@ -6,6 +6,8 @@ import type ReanimatedModalProps from '@components/Modal/ReanimatedModal/types';
 
 import type UseResponsiveLayout from '@hooks/useResponsiveLayout';
 
+import type ComposerFocusManagerType from '@libs/ComposerFocusManager';
+
 import type * as ModalActions from '@userActions/Modal';
 
 import CONST from '@src/CONST';
@@ -367,5 +369,53 @@ describe('BaseModal', () => {
 
         unmount();
         expect(setModalCovering).toHaveBeenLastCalledWith(coveringModalID, false);
+    });
+
+    it('releases the ready-to-focus promise when the host unmounts the modal while it is still visible', async () => {
+        // Given a visible modal that registered a ready-to-focus promise when it was shown, so the composer waits on it
+        const modalProps: ReanimatedModalProps[] = [];
+        jest.doMock('react', () => React);
+        jest.doMock('@userActions/Modal', () => ({
+            ...jest.requireActual<typeof ModalActions>('@userActions/Modal'),
+            areAllModalsHidden: jest.fn(() => true),
+            onModalDidClose: jest.fn(),
+            setModalCovering: jest.fn(),
+            setModalVisibility: jest.fn(),
+            willAlertModalBecomeVisible: jest.fn(),
+        }));
+        jest.doMock('@components/Modal/ReanimatedModal', () => ({
+            __esModule: true,
+            default: (props: ReanimatedModalProps) => {
+                modalProps.push(props);
+                return null;
+            },
+        }));
+        const {default: BaseModal} = jest.requireActual<{default: typeof BaseModalComponent}>('@components/Modal/BaseModal');
+        const {default: ComposerFocusManager} = jest.requireActual<{default: typeof ComposerFocusManagerType}>('@libs/ComposerFocusManager');
+
+        const {unmount} = render(
+            <BaseModal
+                isVisible
+                type={CONST.MODAL.MODAL_TYPE.CONFIRM}
+            >
+                {null}
+            </BaseModal>,
+        );
+        modalProps.at(-1)?.onModalWillShow?.();
+
+        // When the host removes it from the tree without ever flipping isVisible to false, so react-native-web never
+        // dispatches onDismiss from its mounted effect and no hide path releases the promise
+        unmount();
+
+        let isSettled = false;
+        ComposerFocusManager.isReadyToFocus().then(() => {
+            isSettled = true;
+        });
+        // Drain the microtask queue so an already-released promise runs its callback.
+        await Promise.resolve();
+
+        // Then the id-less wait that focusComposerWithDelay performs settles, instead of stranding the composer's
+        // only focus path on a promise that can never resolve for the rest of the session
+        expect(isSettled).toBe(true);
     });
 });
