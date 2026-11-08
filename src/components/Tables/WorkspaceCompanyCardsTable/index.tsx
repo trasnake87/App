@@ -2,6 +2,7 @@ import BlockingView from '@components/BlockingViews/BlockingView';
 import Button from '@components/Button';
 import ButtonDisabledWhenOffline from '@components/Button/composed/ButtonDisabledWhenOffline';
 import CardFeedIcon from '@components/CardFeedIcon';
+import type {LocaleContextProps} from '@components/LocaleContextProvider';
 import ScrollView from '@components/ScrollView';
 import Table, {composeTableListHeader} from '@components/Table';
 import type {CompareItemsCallback, FilterConfig, IsItemInFilterCallback, IsItemInSearchCallback, TableColumn, TableHandle} from '@components/Table';
@@ -21,7 +22,7 @@ import useThemeStyles from '@hooks/useThemeStyles';
 
 import {clearCompanyCardErrorField, resetFailedWorkspaceCompanyCardUnassignment} from '@libs/actions/CompanyCards';
 import {renameCompanyCardInline} from '@libs/actions/Policy/InlineEdit';
-import {formatMaskedCardName, getCompanyCardCustomName, getDefaultCardName} from '@libs/CardUtils';
+import {formatMaskedCardName, getCompanyCardCustomName, getDefaultCardName, parseCardLastScrape} from '@libs/CardUtils';
 import {getLatestErrorField} from '@libs/ErrorUtils';
 import {getConnectedIntegration} from '@libs/PolicyUtils';
 import showInlineEditError from '@libs/showInlineEditError';
@@ -37,12 +38,15 @@ import variables from '@styles/variables';
 
 import CONST from '@src/CONST';
 import ONYXKEYS from '@src/ONYXKEYS';
+import type {Card} from '@src/types/onyx';
 import {isEmptyObject} from '@src/types/utils/EmptyObject';
 import isLoadingOnyxValue from '@src/types/utils/isLoadingOnyxValue';
 
 import type {ListRenderItemInfo} from '@shopify/flash-list';
+import type {Locale as DateFnsLocale} from 'date-fns';
 
 import {companyCardCustomNamesSelector} from '@selectors/Card';
+import {format} from 'date-fns';
 import {Str} from 'expensify-common';
 import React, {useImperativeHandle, useRef, useState} from 'react';
 import {View} from 'react-native';
@@ -53,7 +57,27 @@ import WorkspaceCompanyCardsTableControls from './WorkspaceCompanyCardsTableCont
 import WorkspaceCompanyCardsTableHeaderButtons from './WorkspaceCompanyCardsTableHeaderButtons';
 import WorkspaceCompanyCardTableItem from './WorkspaceCompanyCardsTableRow';
 
-type CompanyCardsTableColumnKey = 'member' | 'card' | 'customCardName' | 'exportAccount' | 'actions';
+type CompanyCardsTableColumnKey = 'member' | 'card' | 'customCardName' | 'exportAccount' | 'lastSynced' | 'actions';
+
+function getLastSyncedTitle(
+    card: Card | undefined,
+    translate: LocaleContextProps['translate'],
+    getLocalDateFromDatetime: LocaleContextProps['getLocalDateFromDatetime'],
+    dateFnsLocale: DateFnsLocale | undefined,
+) {
+    // Unassigned cards have no Card record, so no sync to report.
+    if (!card) {
+        return undefined;
+    }
+    if (card.isLoadingLastUpdated) {
+        return translate('workspace.moreFeatures.companyCards.updating');
+    }
+    if (!parseCardLastScrape(card)) {
+        return translate('workspace.moreFeatures.companyCards.neverUpdated');
+    }
+    // Same timezone as the card details page.
+    return format(getLocalDateFromDatetime(card.lastScrape), CONST.DATE.MONTH_DAY_YEAR_ABBR_FORMAT, {locale: dateFnsLocale});
+}
 
 type WorkspaceCompanyCardsTableHandle = {
     clearSelection: () => void;
@@ -102,7 +126,7 @@ function WorkspaceCompanyCardsTable({
 }: WorkspaceCompanyCardsTableProps) {
     const styles = useThemeStyles();
     const {isOffline} = useNetwork();
-    const {translate, localeCompare, formatPhoneNumber} = useLocalize();
+    const {translate, localeCompare, formatPhoneNumber, getLocalDateFromDatetime, dateFnsLocale} = useLocalize();
     const {shouldUseNarrowLayout, isMediumScreenWidth} = useResponsiveLayout();
     const tableRef = useRef<TableHandle<WorkspaceCompanyCardTableItemData, CompanyCardsTableColumnKey>>(null);
 
@@ -258,6 +282,16 @@ function WorkspaceCompanyCardsTable({
         },
         ...(shouldShowExportAccountColumn ? [getExportAccountColumn<WorkspaceCompanyCardTableItemData>(translate('workspace.moreFeatures.companyCards.exportAccount'), styles)] : []),
         {
+            key: 'lastSynced',
+            label: translate('workspace.moreFeatures.companyCards.lastSynced'),
+            sortable: true,
+            styling: {containerStyles: [styles.mnw0]},
+            dynamicSizing: {
+                getContentToMeasure: (item) => (item.lastSyncedTitle ? [{text: item.lastSyncedTitle, fontSize: fontScale.text}] : []),
+                shouldFitContent: true,
+            },
+        },
+        {
             key: 'actions',
             label: '',
             sortable: false,
@@ -309,6 +343,8 @@ function WorkspaceCompanyCardsTable({
                       cardholder,
                       // Unassigned cards have no details page and so no Accounting section to match, hence no title.
                       exportAccountTitle: shouldShowExportAccountColumn && assignedCard ? getCardExportAccountTitle(cardExportSettings, assignedCard) : undefined,
+                      lastSyncedTitle: getLastSyncedTitle(assignedCard, translate, getLocalDateFromDatetime, dateFnsLocale),
+                      lastSyncedAt: assignedCard ? parseCardLastScrape(assignedCard)?.getTime() : undefined,
                       errors: rowErrors,
                       pendingAction: assignedCard?.pendingAction ?? assignedCard?.pendingFields?.scrapeMinDate,
                       canEditName,
@@ -388,6 +424,13 @@ function WorkspaceCompanyCardsTable({
 
             // Most cards share the default export account, so ties fall back to the card name for a stable order.
             return (exportAccountComparison !== 0 ? exportAccountComparison : cardNameComparison) * orderMultiplier;
+        }
+
+        if (activeSorting.columnKey === 'lastSynced') {
+            // Never-synced sorts oldest; ties fall back to card name.
+            const lastSyncedComparison = (a.lastSyncedAt ?? 0) - (b.lastSyncedAt ?? 0);
+
+            return (lastSyncedComparison !== 0 ? lastSyncedComparison : cardNameComparison) * orderMultiplier;
         }
 
         return 0;
