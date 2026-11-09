@@ -17,6 +17,25 @@
 
 static BOOL initialized = NO;
 
+/// Whether an app frame sits above UIApplicationMain, i.e. the thread was running app code and not only system code
+/// such as the idle run loop. `main` is an app frame below UIApplicationMain, so it does not count. A stack with no
+/// UIKitCore frame (e.g. truncated) is treated as having app code, so it keeps the default grouping.
+static BOOL hasAppFrameAboveApplicationMain(SentryStacktrace *stacktrace)
+{
+    BOOL isAboveApplicationMain = NO;
+    // Frames run from caller to callee, so every frame after the first UIKitCore one (UIApplicationMain) is above it.
+    for (SentryFrame *frame in stacktrace.frames) {
+        if (!isAboveApplicationMain) {
+            isAboveApplicationMain = [frame.package.lastPathComponent isEqualToString:@"UIKitCore"];
+            continue;
+        }
+        if (frame.inApp.boolValue) {
+            return YES;
+        }
+    }
+    return !isAboveApplicationMain;
+}
+
 + (instancetype)shared {
     static SentryNativeSDKManager *instance = nil;
     static dispatch_once_t onceToken;
@@ -62,6 +81,14 @@ static BOOL initialized = NO;
                 [exception.value rangeOfString:@"ExceptionsManager.reportException"].location != NSNotFound) {
                 return nil;
             }
+        }
+
+        // The watchdog's main-thread snapshot of an app hang often holds no app code (the idle run loop), so every such
+        // hang hashes into one group (APP-77W). Group those on the hang type and the screen on top instead; hangs whose
+        // snapshot names app code keep the default stack grouping.
+        SentryException *firstException = event.exceptions.firstObject;
+        if ([firstException.mechanism.type isEqualToString:@"AppHang"] && !hasAppFrameAboveApplicationMain(firstException.stacktrace)) {
+            event.fingerprint = @[ @"app-hang", firstException.type ?: @"unknown", event.tags[@"screen"] ?: @"unknown" ];
         }
         return event;
     };

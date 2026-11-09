@@ -289,6 +289,8 @@ function NavigationRoot({authenticated, lastVisitedPath, initialUrl, onReady}: N
         endSpan(CONST.TELEMETRY.SPAN_BOOTSPLASH.NAVIGATION);
         onReady();
         navigationIntegration.registerNavigationContainer(navigationRef);
+        // onStateChange does not fire for the initial state, so tag the first screen here.
+        Sentry.setTag(CONST.TELEMETRY.TAGS.SCREEN, navigationRef.getCurrentRoute()?.name ?? 'unknown');
         trackFullstoryPageView(navigationRef.getRootState());
         setupNavigationFocusReturn();
 
