@@ -1,4 +1,9 @@
-import MigratedUserWelcomeModalGuard, {onSessionOrLoadingAppChanged, resetDismissedProductTrainingState, resetSessionFlag} from '@libs/Navigation/guards/MigratedUserWelcomeModalGuard';
+import MigratedUserWelcomeModalGuard, {
+    markDismissalStarted,
+    onSessionOrLoadingAppChanged,
+    resetDismissedProductTrainingState,
+    resetSessionFlag,
+} from '@libs/Navigation/guards/MigratedUserWelcomeModalGuard';
 import type {GuardContext} from '@libs/Navigation/guards/types';
 import createDynamicRoute from '@libs/Navigation/helpers/dynamicRoutesUtils/createDynamicRoute';
 
@@ -507,6 +512,28 @@ describe('MigratedUserWelcomeModalGuard', () => {
 
             const result = MigratedUserWelcomeModalGuard.evaluate(stateWithModalOnTop, nonObjectPayloadAction, defaultContext);
             expect(result.type).toBe('BLOCK');
+        });
+
+        it('should stop blocking the root POP of the dismissal once the close handler marks it as started', async () => {
+            // Given the modal is on top of the root stack and the dismissal NVP has not been written yet
+            await redirectToWelcomeModal();
+
+            // Navigation.goBack(spendRoute) dispatches this POP synchronously, so it is evaluated
+            // before useBeforeRemove(persistDismissal) can write the dismissal NVP on a later Onyx tick.
+            const dismissalPopAction: NavigationAction = {
+                type: CONST.NAVIGATION.ACTION_TYPE.POP,
+                payload: {count: 1},
+            };
+
+            // Then the POP is blocked, because nothing has signalled that the modal is closing
+            expect(MigratedUserWelcomeModalGuard.evaluate(stateWithModalOnTop, dismissalPopAction, defaultContext).type).toBe('BLOCK');
+
+            // When the close handler marks the dismissal as started, synchronously ahead of the NVP write
+            markDismissalStarted();
+
+            // Then the same POP goes through and the guard does not redirect back to the modal,
+            // so the close stays one synchronous unit instead of waiting on a transition signal iOS never sends.
+            expect(MigratedUserWelcomeModalGuard.evaluate(stateWithModalOnTop, dismissalPopAction, defaultContext).type).toBe('ALLOW');
         });
     });
 

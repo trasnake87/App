@@ -33,6 +33,12 @@ let account: OnyxEntry<Account>;
 let onboarding: OnyxEntry<Onboarding>;
 
 let hasRedirectedToMigratedUserModal = false;
+let isDismissalStarted = false;
+
+/** Set synchronously by the close handler: the dismissal NVP write is async, so the guard must stop blocking the close before Onyx delivers it. */
+function markDismissalStarted() {
+    isDismissalStarted = true;
+}
 
 function getMigratedUserWelcomeModalRoute(basePath?: string): Route {
     return createDynamicRoute(
@@ -47,6 +53,7 @@ function getMigratedUserWelcomeModalRoute(basePath?: string): Route {
 
 function resetSessionFlag() {
     hasRedirectedToMigratedUserModal = false;
+    isDismissalStarted = false;
 }
 
 /**
@@ -61,6 +68,7 @@ function navigateToMigratedUserWelcomeModalIfReady() {
         isDelegateSessionSelector(session) ||
         !session?.authToken ||
         isLoadingApp ||
+        isDismissalStarted ||
         hasRedirectedToMigratedUserModal ||
         !hasBeenAddedToNudgeMigration ||
         !isDismissedProductTrainingLoaded ||
@@ -161,6 +169,7 @@ function shouldBlockWhileModalActive(state: NavigationState, action: NavigationA
     const isRequiredTwoFactorSetupNavigation = isRequiredTwoFactorSetupExceptionActive() && isTwoFactorSetupScreen(getActionPayloadScreenName(action));
     return (
         hasRedirectedToMigratedUserModal &&
+        !isDismissalStarted &&
         !isProductTrainingElementDismissed('migratedUserWelcomeModal', dismissedProductTraining) &&
         state.routes.at(-1)?.name === NAVIGATORS.MIGRATED_USER_MODAL_NAVIGATOR &&
         !isAllowedAction &&
@@ -225,7 +234,7 @@ const MigratedUserWelcomeModalGuard: NavigationGuard = {
 };
 
 export default MigratedUserWelcomeModalGuard;
-export {resetSessionFlag, onSessionOrLoadingAppChanged};
+export {resetSessionFlag, onSessionOrLoadingAppChanged, markDismissalStarted};
 
 /**
  * Resets the dismissal-NVP loaded flag and cached value.

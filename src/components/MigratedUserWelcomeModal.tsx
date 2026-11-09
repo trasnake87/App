@@ -11,6 +11,7 @@ import {openExternalLink} from '@libs/actions/Link';
 import {dismissProductTraining} from '@libs/actions/Welcome';
 import convertToLTR from '@libs/convertToLTR';
 import Log from '@libs/Log';
+import {markDismissalStarted} from '@libs/Navigation/guards/MigratedUserWelcomeModalGuard';
 import Navigation from '@libs/Navigation/Navigation';
 import {buildCannedSearchQuery} from '@libs/SearchQueryUtils';
 
@@ -61,9 +62,8 @@ function MigratedUserWelcomeModal() {
 
     const handleClose = () => {
         const spendRoute = ROUTES.SEARCH_ROOT.getRoute({query: buildCannedSearchQuery({type: CONST.SEARCH.DATA_TYPES.EXPENSE_REPORT}), searchKey: CONST.SEARCH.SEARCH_KEYS.REPORTS});
-        Navigation.goBack(undefined, {
-            afterTransition: () => Navigation.navigate(spendRoute),
-        });
+        markDismissalStarted();
+        Navigation.goBack(spendRoute);
     };
 
     const onHelp = () => {
