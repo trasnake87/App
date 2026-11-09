@@ -1,9 +1,9 @@
 import {useEffect, useRef, useState} from 'react';
-import {AppState} from 'react-native';
+import {AppState, Platform} from 'react-native';
 
 /**
  * Counts returns from the background. iOS also goes `inactive` for Control Center, the app switcher,
- * permission dialogs and the camera, and each of those comes back `active`, so require a real
+ * permission dialogs and the camera, and each of those comes back `active`, so on iOS require a real
  * background first.
  */
 function useAppReturnCount(): number {
@@ -16,7 +16,12 @@ function useAppReturnCount(): number {
                 wasBackgroundedRef.current = true;
                 return;
             }
-            if (nextAppState !== 'active' || !wasBackgroundedRef.current) {
+            if (nextAppState !== 'active') {
+                return;
+            }
+            // Android has no `inactive` state and emits `active` only when the host activity resumes, so this guard
+            // filters nothing there, while a pause it never saw as `background` makes it drop the return for good.
+            if (Platform.OS !== 'android' && !wasBackgroundedRef.current) {
                 return;
             }
             wasBackgroundedRef.current = false;

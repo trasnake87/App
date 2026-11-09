@@ -4,7 +4,7 @@ import useAppReturnCount from '@hooks/useAppReturnCount';
 
 import type {AppStateStatus} from 'react-native';
 
-import {AppState} from 'react-native';
+import {AppState, Platform} from 'react-native';
 
 const mockedAddEventListener = jest.spyOn(AppState, 'addEventListener');
 
@@ -65,6 +65,19 @@ describe('useAppReturnCount', () => {
 
         // Then it is counted once, not once per transition
         expect(result.current).toBe(1);
+    });
+
+    it('counts the reopen on Android even when the pause was never seen', () => {
+        // Given Android, where `active` is only ever sent when the host activity resumes
+        const platform = jest.replaceProperty(Platform, 'OS', 'android');
+
+        // When the app comes back and this listener never got a `background` change
+        const {result} = renderHook(() => useAppReturnCount());
+        emitAppState('active');
+
+        // Then the return is reported, so useTabFocusedRefresh refetches the Home cards
+        expect(result.current).toBe(1);
+        platform.restore();
     });
 
     it('counts each separate return', () => {
