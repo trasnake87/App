@@ -1,3 +1,4 @@
+import useBeforeRemove from '@hooks/useBeforeRemove';
 import useDynamicBackPath from '@hooks/useDynamicBackPath';
 import useDynamicForwardPath from '@hooks/useDynamicForwardPath';
 import useEnvironment from '@hooks/useEnvironment';
@@ -28,7 +29,7 @@ import isLoadingOnyxValue from '@src/types/utils/isLoadingOnyxValue';
 
 import {findFocusedRoute} from '@react-navigation/native';
 import {authTokenTypeSelector} from '@selectors/Session';
-import React from 'react';
+import React, {useRef} from 'react';
 
 import SuccessPageBase from './SuccessPageBase';
 
@@ -111,6 +112,21 @@ function DynamicSuccessPage({route}: DynamicSuccessPageProps) {
         }
         quitAndNavigateBack(is2FAEnabled, dynamicBackPath);
     };
+
+    const isLeavingRef = useRef(false);
+
+    // "Got it" and the header back button are not the only ways off this page: the system back button, the
+    // browser back button and an overlay press remove the TWO_FACTOR_AUTH modal straight through
+    // react-navigation, revealing the Settings > Security route the forced flow keeps underneath.
+    // The ref lets the dismiss that goBack() itself issues through.
+    useBeforeRemove((event) => {
+        if (isLeavingRef.current || !(shouldReturnToOnboardingAfter2FA || isForcedSetupFlow)) {
+            return;
+        }
+        event.preventDefault();
+        isLeavingRef.current = true;
+        goBack();
+    });
 
     const onButtonPress = () => {
         if (CONFIG.IS_HYBRID_APP && isClassicRedirectDismissed && !isClassicRedirectBlocked) {

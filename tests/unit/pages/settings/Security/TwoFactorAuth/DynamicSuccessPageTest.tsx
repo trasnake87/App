@@ -1,4 +1,4 @@
-import {render} from '@testing-library/react-native';
+import {act, render} from '@testing-library/react-native';
 
 import OnyxListItemProvider from '@components/OnyxListItemProvider';
 
@@ -17,7 +17,7 @@ import ONYXKEYS from '@src/ONYXKEYS';
 import ROUTES from '@src/ROUTES';
 import SCREENS from '@src/SCREENS';
 
-import {NavigationContainer} from '@react-navigation/native';
+import {NavigationContainer, StackActions} from '@react-navigation/native';
 import React from 'react';
 import Onyx from 'react-native-onyx';
 
@@ -52,6 +52,7 @@ jest.mock('@userActions/Welcome/OnboardingFlow', () => ({
 const mockedUseDynamicBackPath = jest.mocked(useDynamicBackPath);
 
 const Stack = createPlatformStackNavigator<TwoFactorAuthNavigatorParamList>();
+const RootStack = createPlatformStackNavigator<Record<string, undefined>>();
 
 async function renderPage(initialParams?: TwoFactorAuthNavigatorParamList[typeof SCREENS.TWO_FACTOR_AUTH.DYNAMIC_SUCCESS]) {
     render(
@@ -67,6 +68,36 @@ async function renderPage(initialParams?: TwoFactorAuthNavigatorParamList[typeof
             </NavigationContainer>
         </OnyxListItemProvider>,
     );
+    await waitForBatchedUpdates();
+}
+
+// Mirrors the real tree: the success screen sits in the TWO_FACTOR_AUTH stack nested under a root modal route, which
+// is the route the system back button, the browser back button and an overlay press remove.
+async function renderPageInsideRootModal(initialParams?: TwoFactorAuthNavigatorParamList[typeof SCREENS.TWO_FACTOR_AUTH.DYNAMIC_SUCCESS]) {
+    render(
+        <OnyxListItemProvider>
+            <NavigationContainer ref={navigationRef}>
+                <RootStack.Navigator initialRouteName="RootHome">
+                    <RootStack.Screen name="RootHome">{() => null}</RootStack.Screen>
+                    <RootStack.Screen name="RootModal">
+                        {() => (
+                            <Stack.Navigator initialRouteName={SCREENS.TWO_FACTOR_AUTH.DYNAMIC_SUCCESS}>
+                                <Stack.Screen
+                                    name={SCREENS.TWO_FACTOR_AUTH.DYNAMIC_SUCCESS}
+                                    component={DynamicSuccessPage}
+                                    initialParams={initialParams}
+                                />
+                            </Stack.Navigator>
+                        )}
+                    </RootStack.Screen>
+                </RootStack.Navigator>
+            </NavigationContainer>
+        </OnyxListItemProvider>,
+    );
+    await waitForBatchedUpdates();
+    act(() => {
+        navigationRef.current?.dispatch(StackActions.push('RootModal'));
+    });
     await waitForBatchedUpdates();
 }
 
@@ -134,6 +165,24 @@ describe('DynamicSuccessPage', () => {
         expect(Navigation.revealRouteBeforeDismissingModal).toHaveBeenCalledWith(ROUTES.HOME, expect.anything());
         expect(resumeOnboardingAfterRequired2FASetup).toHaveBeenCalled();
         expect(quitAndNavigateBack).not.toHaveBeenCalled();
+    });
+
+    it('sends the forced-setup user Home when the modal is removed without pressing a button', async () => {
+        // Given the 2FA setup was opened from the require-2FA overlay (Security base with forceSetup) by a user who already completed onboarding
+        mockedUseDynamicBackPath.mockReturnValue(ROUTES.SETTINGS_SECURITY.getRoute(true));
+        await Onyx.merge(ONYXKEYS.ACCOUNT, {requiresTwoFactorAuth: true});
+        await Onyx.merge(ONYXKEYS.NVP_ONBOARDING, {hasCompletedGuidedSetupFlow: true});
+        await renderPageInsideRootModal({forceSetup: 'true'});
+
+        // When the modal route is removed straight through react-navigation, the way the system back button, the browser back button and an overlay press do it
+        act(() => {
+            navigationRef.current?.goBack();
+        });
+        await waitForBatchedUpdates();
+
+        // Then the removal is prevented and Home is revealed under the RHP, instead of uncovering Settings > Security
+        expect(Navigation.revealRouteBeforeDismissingModal).toHaveBeenCalledWith(ROUTES.HOME, expect.anything());
+        expect(navigationRef.current?.getRootState().routes.at(-1)?.name).toBe('RootModal');
     });
 
     it('keeps the RHP open on the Enabled page when 2FA was set up voluntarily from Settings > Security', async () => {
