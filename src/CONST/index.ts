@@ -2774,6 +2774,8 @@ const CONST = {
             MFA_SCENARIO: 'mfa_scenario',
             MFA_ERROR_REASON: 'mfa_error_reason',
             BUILD_TYPE: 'build_type',
+            /** Name of the screen on top of the navigation stack, kept current on every navigation so native app hang events can be grouped by screen. */
+            SCREEN: 'screen',
             /** Written by Sentry's `thirdPartyErrorFilterIntegration` on events whose every frame is foreign to our bundle, read by the noise filters. */
             THIRD_PARTY_CODE: 'third_party_code',
             TEST_CRASH: 'test_crash',

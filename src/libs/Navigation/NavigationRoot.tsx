@@ -273,6 +273,7 @@ function NavigationRoot({authenticated, lastVisitedPath, initialUrl, onReady}: N
             return;
         }
         const currentRoute = navigationRef.getCurrentRoute();
+        Sentry.setTag(CONST.TELEMETRY.TAGS.SCREEN, currentRoute?.name ?? 'unknown');
         Sentry.addBreadcrumb({message: `[NAVIGATION] screen: ${currentRoute?.name}, params: ${JSON.stringify(currentRoute?.params ?? {})}`, category: 'navigation'});
 
         updateCurrentReportID(state);
