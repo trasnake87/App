@@ -41,7 +41,17 @@ import TransactionPreviewContent from './TransactionPreviewContent';
 function TransactionPreview(props: TransactionPreviewProps) {
     const {translate} = useLocalize();
     const {convertToDisplayString} = useCurrencyListActions();
-    const {action, chatReport, reportID, transactionID: transactionIDFromProps, onPreviewPressed, shouldHighlight, reportPreviewAction, contextAction} = props;
+    const {
+        action,
+        chatReport,
+        reportID,
+        transactionID: transactionIDFromProps,
+        onPreviewPressed,
+        shouldHighlight,
+        reportPreviewAction,
+        contextAction,
+        isBillSplit: isSplitBillPreview,
+    } = props;
     const chatReportID = chatReport?.reportID;
     const {anchor: contextMenuAnchorRef, shouldDisplayContextMenu, originalReportID} = useShowContextMenuState();
     const {checkIfContextMenuActive} = useShowContextMenuActions();
@@ -96,7 +106,8 @@ function TransactionPreview(props: TransactionPreviewProps) {
 
     const transactionRawAmount = (Number(transaction?.modifiedAmount) || transaction?.amount) ?? 0;
 
-    const shouldDisableOnPress = isBillSplit && isEmptyObject(transaction);
+    // A split card whose container transaction (SPLIT_REPORT_ID) is not in Onyx yet has nothing to open, and the action still identifies it as a split.
+    const shouldDisableOnPress = isSplitBillPreview && isEmptyObject(transaction);
     const isReviewDuplicateTransactionPage = route.name === SCREENS.TRANSACTION_DUPLICATE.DYNAMIC_REVIEW;
 
     if (onPreviewPressed) {
