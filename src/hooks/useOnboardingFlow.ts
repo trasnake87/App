@@ -3,6 +3,7 @@ import {useInitialURLState} from '@components/InitialURLContextProvider';
 import AccountUtils from '@libs/AccountUtils';
 import getCurrentUrl from '@libs/Navigation/currentUrl';
 import Navigation from '@libs/Navigation/Navigation';
+import navigationRef from '@libs/Navigation/navigationRef';
 import TransitionTracker from '@libs/Navigation/TransitionTracker';
 import {isLoggingInAsNewUser} from '@libs/SessionUtils';
 import {hasSecureLinkKey} from '@libs/Url';
@@ -11,6 +12,7 @@ import {completeHybridAppOnboarding} from '@userActions/Welcome';
 import {buildOnboardingFlowParams, startOnboardingFlow} from '@userActions/Welcome/OnboardingFlow';
 
 import CONFIG from '@src/CONFIG';
+import NAVIGATORS from '@src/NAVIGATORS';
 import ONYXKEYS from '@src/ONYXKEYS';
 import ROUTES from '@src/ROUTES';
 import isLoadingOnyxValue from '@src/types/utils/isLoadingOnyxValue';
@@ -114,6 +116,17 @@ function useOnboardingFlowRouter() {
 
                 const isMigratedUser = hasBeenAddedToNudgeMigration ?? false;
                 const isInvitedOrGroupMember = (hasNonPersonalPolicy || wasInvitedToNewDot) ?? false;
+
+                // hasNonPersonalPolicy and nvp_introSelected arrive with the OpenApp/ReconnectApp response, which can land
+                // after the flow was entered from the pre-invitation cache, so retract onboarding here instead of only
+                // declining to open it. This effect re-runs on both values.
+                if (isInvitedOrGroupMember && isOnboardingCompleted === false) {
+                    const rootRoutes = navigationRef.isReady() ? navigationRef.getRootState().routes : [];
+                    if (rootRoutes.length > 1 && rootRoutes.some((route) => route.name === NAVIGATORS.ONBOARDING_MODAL_NAVIGATOR)) {
+                        Navigation.removeScreenFromNavigationState(NAVIGATORS.ONBOARDING_MODAL_NAVIGATOR);
+                    }
+                }
+
                 if (isMigratedUser || isInvitedOrGroupMember || shouldSuppressPromotionalUI) {
                     return;
                 }

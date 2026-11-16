@@ -170,6 +170,7 @@ function shouldPreventReset(state: NavigationState, action: NavigationAction) {
     const currentFocusedRoute = findFocusedRoute(state);
     const targetFocusedRoute = findFocusedRoute(action?.payload as NavigationState);
     const isOnboardingCompleted = hasCompletedGuidedSetupFlowSelector(onboarding) ?? false;
+    const isInvitedOrGroupMember = (hasNonPersonalPolicy || wasInvitedToNewDot) ?? false;
 
     // Allow required 2FA setup navigation even when the user is currently on onboarding.
     if (isRequiredTwoFactorSetupExceptionActive() && isTwoFactorSetupScreen(getActionPayloadScreenName(action))) {
@@ -177,7 +178,7 @@ function shouldPreventReset(state: NavigationState, action: NavigationAction) {
     }
 
     // We want to prevent the user from navigating back to a non-onboarding screen if they are currently on an onboarding screen
-    if (!isOnboardingCompleted && isOnboardingFlowName(currentFocusedRoute?.name) && !isOnboardingFlowName(targetFocusedRoute?.name)) {
+    if (!isOnboardingCompleted && !isInvitedOrGroupMember && isOnboardingFlowName(currentFocusedRoute?.name) && !isOnboardingFlowName(targetFocusedRoute?.name)) {
         setOnboardingErrorMessage('onboarding.purpose.errorBackButton');
         return true;
     }

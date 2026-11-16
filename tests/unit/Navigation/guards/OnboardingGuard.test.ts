@@ -1098,4 +1098,43 @@ describe('OnboardingGuard', () => {
             expect(result.type).toBe('ALLOW');
         });
     });
+
+    describe('workspace invitation landing after the flow was restored (#106926)', () => {
+        it('should ALLOW leaving onboarding once the response reveals the user is a workspace member', async () => {
+            // Given a member whose cache has just learned about the workspace they were invited to:
+            // onboarding was never completed, but hasNonPersonalPolicy arrived with the OpenApp/ReconnectApp response
+            await Onyx.merge(ONYXKEYS.NVP_ONBOARDING, {
+                hasCompletedGuidedSetupFlow: false,
+            });
+            await Onyx.merge(ONYXKEYS.HAS_NON_PERSONAL_POLICY, true);
+            await waitForBatchedUpdates();
+
+            const restoredOnboardingState: NavigationState = {
+                key: 'root',
+                index: 0,
+                routeNames: [SCREENS.ONBOARDING.EMPLOYEES],
+                routes: [{key: 'employees', name: SCREENS.ONBOARDING.EMPLOYEES}],
+                stale: false,
+                type: 'root',
+            };
+
+            // When the app tries to leave the restored onboarding navigator by resetting to HOME
+            const resetToHome: NavigationAction = {
+                type: CONST.NAVIGATION_ACTIONS.RESET,
+                payload: {
+                    key: 'root',
+                    index: 0,
+                    routeNames: [SCREENS.HOME],
+                    routes: [{key: 'home', name: SCREENS.HOME}],
+                    stale: false,
+                    type: 'root',
+                },
+            };
+
+            const result = OnboardingGuard.evaluate(restoredOnboardingState, resetToHome, authenticatedContext);
+
+            // Then the exit must be allowed, because invited and group members are not supposed to be held in onboarding
+            expect(result.type).toBe('ALLOW');
+        });
+    });
 });
