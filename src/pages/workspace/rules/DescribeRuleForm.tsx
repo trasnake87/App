@@ -361,6 +361,8 @@ function DescribeRuleForm({
                     role={CONST.ROLE.PRESENTATION}
                     onKeyPress={submitFormOnModEnter}
                     onFocus={scrollToInput}
+                    // The admin can scroll the box out of view without losing focus, so every caret move re-reveals it
+                    onSelectionChange={scrollToInput}
                     maxLength={CONST.GENERATED_RULE.PROMPT_MAX_LENGTH}
                     multiline
                     shouldSaveDraft

@@ -5,6 +5,7 @@ import ScrollViewWithContext from '@components/ScrollViewWithContext';
 import Text from '@components/Text';
 
 import useBottomSafeSafeAreaPaddingStyle from '@hooks/useBottomSafeSafeAreaPaddingStyle';
+import useKeyboardState from '@hooks/useKeyboardState';
 import useSafeAreaPaddings from '@hooks/useSafeAreaPaddings';
 import useThemeStyles from '@hooks/useThemeStyles';
 
@@ -121,6 +122,7 @@ function FormWrapper({
     const errorAnnouncementKey = getErrorAnnouncementKey();
     const fallbackAnnouncementMessage = getFallbackAnnouncementMessage();
     const isWeb = getPlatform() === CONST.PLATFORM.WEB;
+    const {isKeyboardShown} = useKeyboardState();
 
     const onFixTheErrorsLinkPressed = () => {
         const errorFields = !isEmptyObject(errors) ? errors : (serverErrorFields ?? {});
@@ -163,10 +165,14 @@ function FormWrapper({
     };
 
     const scrollTo = (y: number) => {
-        // Wait for the keyboard animation to complete
-        setTimeout(() => {
-            formRef.current?.scrollTo({y: Math.max(y, 0), animated: true});
-        }, CONST.ANIMATED_TRANSITION);
+        // A closed keyboard is about to open and change the visible height, so wait for its animation. An open keyboard has
+        // already settled, therefore the caret must follow the keystroke now.
+        setTimeout(
+            () => {
+                formRef.current?.scrollTo({y: Math.max(y, 0), animated: true});
+            },
+            isKeyboardShown ? 0 : CONST.ANIMATED_TRANSITION,
+        );
     };
 
     // If either of `addBottomSafeAreaPadding` or `shouldSubmitButtonStickToBottom` is explicitly set,

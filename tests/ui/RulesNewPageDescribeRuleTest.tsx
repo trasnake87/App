@@ -122,8 +122,9 @@ jest.mock('@components/Button', () => {
 });
 jest.mock('@components/Form/InputWrapper', () => {
     const ReactModule = jest.requireActual<typeof React>('react');
-    const {TextInput} = jest.requireActual<{TextInput: React.ComponentType<{accessibilityLabel?: string; onFocus?: () => void}>}>('react-native');
-    return ({accessibilityLabel, onFocus}: {accessibilityLabel: string; onFocus?: () => void}) => ReactModule.createElement(TextInput, {accessibilityLabel, onFocus});
+    const {TextInput} = jest.requireActual<{TextInput: React.ComponentType<{accessibilityLabel?: string; onFocus?: () => void; onSelectionChange?: () => void}>}>('react-native');
+    return ({accessibilityLabel, onFocus, onSelectionChange}: {accessibilityLabel: string; onFocus?: () => void; onSelectionChange?: () => void}) =>
+        ReactModule.createElement(TextInput, {accessibilityLabel, onFocus, onSelectionChange});
 });
 jest.mock('@components/Form/FormProvider', () => {
     const ReactModule = jest.requireActual<typeof React>('react');
@@ -487,6 +488,29 @@ describe('New rule describe section', () => {
 
         // Then the form scrolls to its end, because the refusal and its buttons show below the input, under the keyboard
         expect(mockScrollToEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('scrolls back to the describe box when the caret moves while the box is off screen', async () => {
+        // Given an admin whose described rule was refused, which scrolled the still focused box out of view
+        await renderRulesNewPage();
+        const input = screen.getByLabelText('workspace.rules.newRule.describeRuleInputLabel');
+        fireEvent(input, 'layout', {nativeEvent: {layout: {x: 0, y: 420, width: 300, height: 96}}});
+        fireEvent(input, 'focus');
+        const {generationID} = describeRule(writeSpy, 'Text the approver when a report is submitted');
+        await answerGeneration({
+            generationID,
+            state: CONST.GENERATED_RULE.STATE.IMPOSSIBLE,
+            reason: CONST.GENERATED_RULE.IMPOSSIBLE_REASON.NO_CAPABILITY,
+            explanation: 'Rules cannot send text messages.',
+            suggestedPrompt: 'Comment on the report when it is submitted',
+        });
+        mockScrollTo.mockClear();
+
+        // When the admin types one more character, which moves the caret without giving the box focus again
+        fireEvent(input, 'selectionChange', {nativeEvent: {selection: {start: 1, end: 1}}});
+
+        // Then the form scrolls to the top of the box again, because the keystroke landed in an input the admin cannot see
+        expect(mockScrollTo).toHaveBeenCalledWith(420);
     });
 
     it('drafts the refused description as an agent rule when the admin taps Create anyway', async () => {
