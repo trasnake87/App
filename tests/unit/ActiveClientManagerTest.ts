@@ -276,6 +276,36 @@ describe('ActiveClientManager', () => {
         expect(onBecomeLeader).toHaveBeenCalledTimes(2);
     });
 
+    it('requests the lock once and leads through ACTIVE_CLIENTS when the lock request itself fails', async () => {
+        // Given a browser where every lock request rejects, like the private-mode and policy cases where Web Locks are unavailable,
+        // and a stub that parks after 50 calls so a retry loop can't hang the run
+        const lockOptions: unknown[] = [];
+        Object.defineProperty(navigator, 'locks', {
+            value: {
+                request: (name: string, options: LockOptions) => {
+                    lockOptions.push(options);
+                    return lockOptions.length > 50 ? new Promise(() => {}) : Promise.reject(new Error('Lock request failed'));
+                },
+            },
+            configurable: true,
+        });
+        const tab = openTab();
+
+        // When the tab initializes and every pending microtask is drained, which is all a retry from the rejection handler needs to run again
+        tab.init();
+        for (let i = 0; i < 200; i++) {
+            // eslint-disable-next-line no-await-in-loop
+            await Promise.resolve();
+        }
+
+        // Then it made a single request instead of re-requesting on every rejection, so the thread is never held by an unbounded loop
+        expect(lockOptions).toHaveLength(1);
+
+        // And it still becomes ready and leads through the clientID election, so it can flush the queue instead of waiting forever
+        await tab.isReady();
+        expect(tab.isClientTheLeader()).toBe(true);
+    });
+
     it('falls back to the ACTIVE_CLIENTS list when Web Locks are not available', async () => {
         // Given a browser without Web Locks
         Object.defineProperty(navigator, 'locks', {

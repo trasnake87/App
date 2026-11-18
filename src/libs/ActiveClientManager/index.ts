@@ -20,7 +20,8 @@ const LEADER_LOCK_NAME = 'activeClientLeader';
 
 // Builds from before Web Locks pick the leader from ACTIVE_CLIENTS alone. The prefix lets us tell their IDs apart while both builds are open.
 const WEB_LOCK_CLIENT_ID_PREFIX = 'webLock_';
-const clientID = `${WEB_LOCK_CLIENT_ID_PREFIX}${Str.guid()}`;
+let clientID = `${WEB_LOCK_CLIENT_ID_PREFIX}${Str.guid()}`;
+let hasLeaderLockRequestFailed = false;
 const maxClients = 20;
 let activeClients: string[] = [];
 let resolveSavedSelfPromise: () => void;
@@ -29,7 +30,7 @@ const savedSelfPromise = new Promise<void>((resolve) => {
 });
 let beforeunloadListenerAdded = false;
 
-const canUseWebLocks = () => typeof navigator !== 'undefined' && !!navigator.locks;
+const canUseWebLocks = () => typeof navigator !== 'undefined' && !!navigator.locks && !hasLeaderLockRequestFailed;
 
 /**
  * Determines when the client is ready. We need to wait both till we saved our ID in onyx AND the init method was called
@@ -120,6 +121,37 @@ Onyx.connectWithoutView({
     },
 });
 
+const cleanUpClientId = () => {
+    isPromotingNewLeader = isClientTheLeader();
+    activeClients = activeClients.filter((id) => id !== clientID);
+    setActiveClients(activeClients);
+};
+
+const removeBeforeUnloadListener = () => {
+    if (!beforeunloadListenerAdded) {
+        return;
+    }
+    beforeunloadListenerAdded = false;
+    window.removeEventListener('beforeunload', cleanUpClientId);
+};
+
+/**
+ * Join the clientID election this build also uses in browsers without Web Locks: save our ID last in ACTIVE_CLIENTS and treat the last ID as the leader.
+ */
+const joinClientIDElection = () => {
+    removeBeforeUnloadListener();
+    activeClients = activeClients.filter((id) => id !== clientID);
+    activeClients.push(clientID);
+    setActiveClients(activeClients).then(resolveSavedSelfPromise);
+    notifyIfBecameLeader();
+
+    beforeunloadListenerAdded = true;
+    window.addEventListener('beforeunload', () => {
+        cleanUpClientId();
+        setModalVisibility(false);
+    });
+};
+
 /**
  * Requests the leader lock. A steal takes it from the current leader right away. Otherwise we wait in line until the leader's tab goes away.
  * If we make a new request before an older one is granted, the older one gives the lock back as soon as it gets it.
@@ -148,29 +180,28 @@ const requestLeaderLock = (shouldSteal: boolean) => {
             // Hold the lock until this tab goes away or another tab steals it
             return new Promise<void>(() => {});
         })
-        .catch(() => {
-            // The request was aborted because we superseded it, or another tab stole the lock from us
+        .catch((error: unknown) => {
             if (requestID !== leaderLockRequestID) {
                 return;
             }
+            const didHoldLeaderLock = isHoldingLeaderLock;
             isHoldingLeaderLock = false;
+            isStealingLeaderLock = false;
             notifyIfBecameLeader();
+
+            // Only a lock we held can be stolen, so any other rejection is the request failing, and re-requesting
+            // it rejects from the same cause in the same drain, so pick the leader from ACTIVE_CLIENTS instead.
+            if (!didHoldLeaderLock) {
+                hasLeaderLockRequestFailed = true;
+
+                // Our ID must stop looking like a Web Locks tab's, so a tab holding the lock steps aside and leaves us the only leader
+                clientID = Str.guid();
+                import('@libs/Log').then(({default: Log}) => Log.alert('[ActiveClientManager] Leader lock request failed', {error: String(error)}));
+                joinClientIDElection();
+                return;
+            }
             requestLeaderLock(false);
         });
-};
-
-const cleanUpClientId = () => {
-    isPromotingNewLeader = isClientTheLeader();
-    activeClients = activeClients.filter((id) => id !== clientID);
-    setActiveClients(activeClients);
-};
-
-const removeBeforeUnloadListener = () => {
-    if (!beforeunloadListenerAdded) {
-        return;
-    }
-    beforeunloadListenerAdded = false;
-    window.removeEventListener('beforeunload', cleanUpClientId);
 };
 
 /**
@@ -192,17 +223,7 @@ const init: Init = () => {
         return;
     }
 
-    removeBeforeUnloadListener();
-    activeClients = activeClients.filter((id) => id !== clientID);
-    activeClients.push(clientID);
-    setActiveClients(activeClients).then(resolveSavedSelfPromise);
-    notifyIfBecameLeader();
-
-    beforeunloadListenerAdded = true;
-    window.addEventListener('beforeunload', () => {
-        cleanUpClientId();
-        setModalVisibility(false);
-    });
+    joinClientIDElection();
 };
 
 const getLogTab: GetLogTab = () => ({clientID, isLeader: isClientTheLeader()});
