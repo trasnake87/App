@@ -350,7 +350,9 @@ function useMarkAsRead({
     };
 
     const completeSkippedMarkAsRead = () => {
-        if (!readActionSkippedRef.current || !Visibility.hasFocus()) {
+        // readNewestAction reads up to now, so a report whose newest actions are not loaded must stay unread.
+        // The latch isn't cleared, so the read still completes on a later pass once the newer actions load.
+        if (!readActionSkippedRef.current || hasNewerActions || !Visibility.hasFocus()) {
             return;
         }
         markNewestActionAsRead();

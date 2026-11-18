@@ -10,6 +10,7 @@ import type SCREENS from '@src/SCREENS';
 import {reportActionsListLoadingStateSelector} from '@src/selectors/ReportMetaData';
 
 import {useRoute} from '@react-navigation/native';
+import {useEffect, useRef} from 'react';
 
 import useConciergeAskState from './useConciergeAskState';
 import {useIsAppLoadPending} from './useInFlightRequests';
@@ -88,6 +89,32 @@ function useReportActionsListModel(reportID: string, isReportLoadPending: boolea
         hasNewerActions,
         newestFetchedReportActionID: reportPaginationState?.newestFetchedReportActionID,
     });
+
+    // An anchored page (linked or oldest-unread OpenReport) can stop short of the newest action, and the
+    // inverted list parks the viewport at the end zone, so `onStartReached` never fires to request the rest.
+    // Walk the forward cursor until the page gains its newest-end marker, mirroring the money-request loop.
+    const prevNewestFetchedIDRef = useRef<string | undefined>(undefined);
+    useEffect(() => {
+        if (isLoadingInitialReportActions !== false || !hasNewerActions || reportActions.length === 0 || isOffline || reportLoadingState?.isLoadingNewerReportActions) {
+            return;
+        }
+        // Safety guard: if the cursor hasn't advanced since the last call, the server isn't returning new
+        // data. Stop to prevent an infinite request loop.
+        const currentCursor = reportPaginationState?.newestFetchedReportActionID;
+        if (prevNewestFetchedIDRef.current !== undefined && prevNewestFetchedIDRef.current === currentCursor) {
+            return;
+        }
+        prevNewestFetchedIDRef.current = currentCursor;
+        loadNewerChats(false);
+    }, [
+        isLoadingInitialReportActions,
+        hasNewerActions,
+        reportActions.length,
+        isOffline,
+        reportLoadingState?.isLoadingNewerReportActions,
+        reportPaginationState?.newestFetchedReportActionID,
+        loadNewerChats,
+    ]);
 
     const {sortedReportActions, sortedVisibleReportActions, isConciergeHiddenHistory, showConciergeSidePanelWelcome, showFullHistory, hasPreviousMessages, handleShowPreviousMessages} =
         useReportActionsVisibility({

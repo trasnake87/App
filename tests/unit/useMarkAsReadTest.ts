@@ -463,6 +463,37 @@ describe('useMarkAsRead', () => {
         expect(readNewestAction).toHaveBeenCalledWith(REPORT_ID, true);
     });
 
+    it('does not complete a skipped mark-as-read while newer actions are still unloaded', () => {
+        // Given an unread report whose anchored page stops short of the newest action, so the mount pass
+        // skips the read and latches it instead of marking read
+        const {result, rerender} = renderHook(
+            (props: {hasNewerActions: boolean}) =>
+                useMarkAsRead({
+                    reportID: REPORT_ID,
+                    report: REPORT as OnyxEntry<OnyxTypes.Report>,
+                    transactionThreadReport: undefined,
+                    sortedVisibleReportActions: [],
+                    isScrolledToEnd: true,
+                    hasNewerActions: props.hasNewerActions,
+                }),
+            {initialProps: {hasNewerActions: true}},
+        );
+        readNewestAction.mockClear();
+
+        // When the unread divider is viewable on the first viewability pass and cashes in that latch
+        act(() => result.current.completeSkippedMarkAsRead());
+
+        // Then the read is held, because readNewestAction reads up to now and would consume the unread
+        // state of the newer actions the user has never seen
+        expect(readNewestAction).not.toHaveBeenCalled();
+
+        // When the newer actions finish loading, the latch is still set, so the read completes
+        rerender({hasNewerActions: false});
+        act(() => result.current.completeSkippedMarkAsRead());
+
+        expect(readNewestAction).toHaveBeenCalledWith(REPORT_ID, true);
+    });
+
     it('does not complete a mark-as-read when none was skipped', () => {
         const {result} = renderMarkAsRead({isScrolledToEnd: true});
         readNewestAction.mockClear();
