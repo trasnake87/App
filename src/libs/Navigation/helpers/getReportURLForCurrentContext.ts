@@ -1,11 +1,11 @@
-import {getEnvironmentURL} from '@libs/Environment/Environment';
+import {DEFAULT_ENVIRONMENT_URL, getEnvironmentURL} from '@libs/Environment/Environment';
 import Navigation from '@libs/Navigation/Navigation';
 
 import ROUTES from '@src/ROUTES';
 
 import isSearchTopmostFullScreenRoute from './isSearchTopmostFullScreenRoute';
 
-let environmentURL: string;
+let environmentURL = DEFAULT_ENVIRONMENT_URL;
 getEnvironmentURL().then((url: string) => (environmentURL = url));
 
 // Static part of the search report path (everything before the first route param), used to detect sibling search-report routes.

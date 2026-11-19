@@ -63,7 +63,7 @@ import {getDecodedCategoryName} from './CategoryUtils';
 import {convertAmountToDisplayString, convertToBackendAmount, convertToShortDisplayString} from './CurrencyUtils';
 import DateUtils from './DateUtils';
 import {getFormattedDistanceInUnits} from './DistanceDisplayUtils';
-import {getEnvironmentURL, getOldDotEnvironmentURL} from './Environment/Environment';
+import {DEFAULT_ENVIRONMENT_URL, getEnvironmentURL, getOldDotEnvironmentURL} from './Environment/Environment';
 import getBase62ReportID from './getBase62ReportID';
 import {isReportMessageAttachment} from './isReportMessageAttachment';
 import {toLocaleOrdinal} from './LocaleDigitUtils';
@@ -173,7 +173,7 @@ Onyx.connectWithoutView({
     },
 });
 
-let environmentURL: string;
+let environmentURL = DEFAULT_ENVIRONMENT_URL;
 getEnvironmentURL().then((url: string) => (environmentURL = url));
 
 let oldDotEnvironmentURL: string;

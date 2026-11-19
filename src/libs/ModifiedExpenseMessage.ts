@@ -15,7 +15,7 @@ import isEmpty from 'lodash/isEmpty';
 
 import {getDecodedCategoryName, isCategoryMissing} from './CategoryUtils';
 import DateUtils from './DateUtils';
-import {getEnvironmentURL} from './Environment/Environment';
+import {DEFAULT_ENVIRONMENT_URL, getEnvironmentURL} from './Environment/Environment';
 import {formatList} from './Localize';
 import Log from './Log';
 import {arePolicyRulesEnabled, findVendorByID, getCleanedTagName, getCommaSeparatedTagNameWithSanitizedColons, getSortedTagKeys, isPolicyAdmin} from './PolicyUtils';
@@ -26,7 +26,7 @@ import {getPolicyName, getRootParentReport, isPolicyExpenseChat, isSelfDM} from 
 import {getFormattedAttendees, getTagArrayFromName} from './TransactionUtils';
 import {isInvalidMerchantValue} from './ValidationUtils';
 
-let environmentURL: string;
+let environmentURL = DEFAULT_ENVIRONMENT_URL;
 getEnvironmentURL().then((url: string) => (environmentURL = url));
 
 /**

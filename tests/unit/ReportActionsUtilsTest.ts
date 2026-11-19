@@ -4341,6 +4341,43 @@ describe('ReportActionsUtils', () => {
 
             expect(result).toBe('');
         });
+
+        it('should build an in-app href while the environment check is still pending', async () => {
+            // Given a build where getEnvironmentURL() never settles, which is what an App Store iOS build looks like for the
+            // first renders after a cold start, so the module-level environmentURL is still whatever it was seeded with
+            jest.resetModules();
+            jest.doMock('@libs/Environment/Environment', () => ({
+                ...jest.requireActual<Record<string, unknown>>('@libs/Environment/Environment'),
+                getEnvironmentURL: () => new Promise<string>(() => {}),
+            }));
+            // The isolated module registry has no mounted navigation ref, so stand in for the non-search context.
+            jest.doMock('@libs/Navigation/helpers/isSearchTopmostFullScreenRoute', () => ({
+                __esModule: true,
+                default: () => false,
+            }));
+
+            const reportID = '4945629927818497';
+            let href: string | undefined;
+            let internalPath: string | undefined;
+
+            // When the partial-approval message is built during that window
+            await jest.isolateModulesAsync(async () => {
+                const {getCreatedReportForUnapprovedTransactionsMessage: getMessage} = await import('@libs/ReportActionsUtils');
+                const {getInternalNewExpensifyPath} = await import('@libs/actions/Link');
+
+                const message = getMessage(reportID, 'Original Report', false, translateLocal);
+                href = message.match(/href="([^"]*)"/)?.[1];
+                internalPath = getInternalNewExpensifyPath(href ?? '');
+            });
+            jest.dontMock('@libs/Environment/Environment');
+            jest.dontMock('@libs/Navigation/helpers/isSearchTopmostFullScreenRoute');
+            jest.resetModules();
+
+            // Then the href carries a real origin, so it resolves to an in-app path instead of being an unparsable
+            // `undefined/r/<reportID>` that makes `new URL()` throw and leaves the link without its press handler
+            expect(href).toBe(`${CONST.NEW_EXPENSIFY_URL}/${ROUTES.REPORT_WITH_ID.getRoute(reportID)}`);
+            expect(internalPath).toBe(`/${ROUTES.REPORT_WITH_ID.getRoute(reportID)}`);
+        });
     });
 
     describe('isDynamicExternalWorkflowSubmitFailedAction', () => {

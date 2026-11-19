@@ -119,7 +119,7 @@ import {isCardWithPotentialFraud} from './CardUtils';
 import {getCategoryGLCode} from './CategoryUtils';
 import {convertToDisplayStringEnLocale} from './CurrencyUtils';
 import DateUtils from './DateUtils';
-import {getEnvironmentURL} from './Environment/Environment';
+import {DEFAULT_ENVIRONMENT_URL, getEnvironmentURL} from './Environment/Environment';
 import {getMicroSecondOnyxErrorWithTranslationKey, isReceiptError} from './ErrorUtils';
 import getAttachmentDetails from './fileDownload/getAttachmentDetails';
 import getBankAccountLastFourDigits from './getBankAccountLastFourDigits';
@@ -1081,7 +1081,7 @@ let deprecatedCurrentUserPrivateDomain: string | undefined;
 let deprecatedCurrentUserAccountID: number | undefined;
 let deprecatedIsAnonymousUser = false;
 
-let environmentURL: string;
+let environmentURL = DEFAULT_ENVIRONMENT_URL;
 getEnvironmentURL().then((url: string) => (environmentURL = url));
 
 /**

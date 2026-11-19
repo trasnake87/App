@@ -15,6 +15,9 @@ const ENVIRONMENT_URLS = {
     [CONST.ENVIRONMENT.ADHOC]: CONST.STAGING_NEW_EXPENSIFY_URL,
 };
 
+/** The environment URL to use until `getEnvironmentURL()` settles. */
+const DEFAULT_ENVIRONMENT_URL = ENVIRONMENT_URLS[CONST.ENVIRONMENT.PRODUCTION];
+
 const OLDDOT_ENVIRONMENT_URLS = {
     [CONST.ENVIRONMENT.DEV]: CONST.INTERNAL_DEV_EXPENSIFY_URL,
     [CONST.ENVIRONMENT.STAGING]: CONST.STAGING_EXPENSIFY_URL,
@@ -67,4 +70,4 @@ function getOldDotEnvironmentURL(): Promise<string> {
     return getEnvironment().then((environment) => OLDDOT_ENVIRONMENT_URLS[environment]);
 }
 
-export {isInternalTestBuild, isDevelopment, isProduction, getEnvironmentURL, getOldDotEnvironmentURL, getOldDotURLFromEnvironment};
+export {isInternalTestBuild, isDevelopment, isProduction, getEnvironmentURL, getOldDotEnvironmentURL, getOldDotURLFromEnvironment, DEFAULT_ENVIRONMENT_URL};
