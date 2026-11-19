@@ -792,8 +792,40 @@ describe('getSecondaryAction', () => {
 
         expect(result.includes(CONST.REPORT.SECONDARY_ACTIONS.PRINT)).toBe(false);
 
-        // The report owner can still export their own draft, so DOWNLOAD_PDF stays
-        expect(result.includes(CONST.REPORT.SECONDARY_ACTIONS.DOWNLOAD_PDF)).toBe(true);
+        // An open report has no PDF on the backend yet, so DOWNLOAD_PDF is dropped along with PRINT
+        expect(result.includes(CONST.REPORT.SECONDARY_ACTIONS.DOWNLOAD_PDF)).toBe(false);
+    });
+
+    it('does not include DOWNLOAD_PDF option when the report is an open draft owned by the current user', () => {
+        // Given an open (Draft) expense report with expenses, owned by the user looking at it
+        const report = createMock<Report>({
+            reportID: REPORT_ID,
+            type: CONST.REPORT.TYPE.EXPENSE,
+            ownerAccountID: EMPLOYEE_ACCOUNT_ID,
+            managerID: EMPLOYEE_ACCOUNT_ID,
+            stateNum: CONST.REPORT.STATE_NUM.OPEN,
+            statusNum: CONST.REPORT.STATUS_NUM.OPEN,
+        });
+        const policy = createMock<Policy>({});
+
+        // When the owner opens the More menu on their own draft
+        const result = getSecondaryReportActions({
+            currentUserLogin: EMPLOYEE_EMAIL,
+            currentUserAccountID: EMPLOYEE_ACCOUNT_ID,
+            submitterLogin: EMPLOYEE_EMAIL,
+            report,
+            chatReport,
+            reportTransactions: [createMock<Transaction>({transactionID: '1', reportID: REPORT_ID}), createMock<Transaction>({transactionID: '2', reportID: REPORT_ID})],
+            originalTransaction: createMock<Transaction>({}),
+            violations: {},
+            bankAccountList: {},
+            policy,
+            rules: undefined,
+            cardList: undefined,
+        });
+
+        // Then Download report is not offered, because an open report has no PDF on the backend
+        expect(result.includes(CONST.REPORT.SECONDARY_ACTIONS.DOWNLOAD_PDF)).toBe(false);
     });
 
     it('does not include DOWNLOAD_PDF option when the report is in OPEN state and the current user is not the owner', () => {

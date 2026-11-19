@@ -86,6 +86,7 @@ import {
     isInvoiceReport,
     isIOUReport as isIOUReportUtil,
     isMoneyRequestReportPendingDeletion,
+    isOpenReport,
     isProcessingReport,
     isSelfDM,
     shouldShowMarkAsDone,
@@ -3221,6 +3222,12 @@ function useSearchBulkActions({queryJSON}: UseSearchBulkActionsParams) {
             },
         };
 
+        // An open report has no finalized report on the backend yet: the PDF is generated when the report is submitted,
+        // so offering the row for a draft only lands on the Generate PDF error modal. Same rule as the single-report menu.
+        const areAllSelectedReportsDownloadable = selectedReports.every(
+            (selectedReport) => !isOpenReport(getReportFromSearchSnapshot(selectedReport.reportID, searchResults?.data, allReports)),
+        );
+
         // The same rules as Change workspace on a single report, so exported or settled reports stay put.
         const transactionsByReportID = getTransactionsByReportID(searchResults?.data ?? {});
         const canChangeWorkspaceOfReport = (selectedReport: SelectedReports) =>
@@ -3494,7 +3501,7 @@ function useSearchBulkActions({queryJSON}: UseSearchBulkActionsParams) {
 
         options.push(exportButtonOption);
 
-        if (isExpenseReportSearch && selectedReportIDs.length > 0) {
+        if (isExpenseReportSearch && selectedReportIDs.length > 0 && areAllSelectedReportsDownloadable) {
             options.push(downloadPDFOption);
         }
 

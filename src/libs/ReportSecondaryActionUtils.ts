@@ -90,7 +90,6 @@ import {
     isProcessingReport as isProcessingReportUtils,
     isReportApproved as isReportApprovedUtils,
     isReportManager as isReportManagerUtils,
-    isReportOwner as isReportOwnerUtils,
     isSelfDM as isSelfDMReportUtils,
     isSettled,
     isTrackExpenseReportNew,
@@ -1010,16 +1009,11 @@ function isDuplicateAction(report: Report, reportTransactions: Transaction[]): b
     return true;
 }
 
-function isDownloadPDFAction(report: Report, currentUserAccountID: number): boolean {
-    // An open report has no finalized report on the backend, and `ExportReportToPDF` re-runs its access check against the
-    // report's current owner/manager. After a rejection the report goes back to open and is owned by the submitter again,
-    // so anyone else (e.g. the approver who rejected it, or their vacation delegate) gets a 404 instead of a PDF.
-    // The owner can still export their own draft, so only hide the action for everyone else.
-    if (isOpenReportUtils(report) && !isReportOwnerUtils(report, currentUserAccountID)) {
-        return false;
-    }
-
-    return true;
+function isDownloadPDFAction(report: Report): boolean {
+    // An open report has no finalized report on the backend: the PDF is generated when the report is submitted, so
+    // `ExportReportToPDF` has nothing to return and the Generate PDF modal lands on its error state. That holds for
+    // the owner's own draft too, so hide the action on every open report, the same way PRINT is hidden below.
+    return !isOpenReportUtils(report);
 }
 
 function getSecondaryReportActions({
@@ -1195,7 +1189,7 @@ function getSecondaryReportActions({
 
     options.push(CONST.REPORT.SECONDARY_ACTIONS.EXPORT);
 
-    if (isDownloadPDFAction(report, currentUserAccountID)) {
+    if (isDownloadPDFAction(report)) {
         options.push(CONST.REPORT.SECONDARY_ACTIONS.DOWNLOAD_PDF);
     }
 
