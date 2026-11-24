@@ -2,6 +2,7 @@ import type {ApiCommand} from '@libs/API/types';
 import {SIDE_EFFECT_REQUEST_COMMANDS, WRITE_COMMANDS} from '@libs/API/types';
 import DateUtils from '@libs/DateUtils';
 import {getPersonalDetailsOnyxDataForOptimisticUsers} from '@libs/PersonalDetailsUtils';
+import {getIneligibleInvitees} from '@libs/PolicyUtils';
 import {toIndexMap} from '@libs/RuleUtils';
 import {buildApprovalWorkflowRules} from '@libs/WorkflowUtils';
 
@@ -1442,6 +1443,68 @@ describe('actions/PolicyMember', () => {
             expect(employeeList?.[primaryEmail]).toBeUndefined();
             expect(employeeList?.[secondaryEmail]).toBeUndefined();
             expect(employeeList?.[ownerEmail]).toBeDefined();
+        });
+
+        it('should make a member invited by a secondary login invitable again after removal when primaryLoginsInvited is empty', async () => {
+            // Given a workspace with only its owner, and no primaryLoginsInvited (the reporter's session, where the
+            // "added with primary logins" message was dismissed, so nothing pairs the secondary login to the primary one)
+            const policyID = '34567';
+            const ownerEmail = 'owner@gmail.com';
+            const primaryEmail = 'primary@gmail.com';
+            const secondaryEmail = 'secondary@gmail.com';
+            const ownerAccountID = 1;
+            const primaryAccountID = 4321;
+            const policyKey = `${ONYXKEYS.COLLECTION.POLICY}${policyID}` as const;
+
+            await Onyx.set(`${ONYXKEYS.PERSONAL_DETAILS_LIST}`, {
+                [ownerAccountID]: {login: ownerEmail},
+                [primaryAccountID]: {login: primaryEmail},
+            });
+            await Onyx.set(policyKey, {
+                ...createRandomPolicy(Number(policyID)),
+                primaryLoginsInvited: {},
+                employeeList: {[ownerEmail]: {email: ownerEmail, role: CONST.POLICY.ROLE.ADMIN}},
+            });
+
+            // When the owner invites that member by their secondary login, and the backend answers with the primary
+            // login while nulling the secondary key (successData then merges {pendingAction: null} back onto it,
+            // which leaves an empty `{}` placeholder at the secondary key)
+            mockFetch.mockAPICommand(WRITE_COMMANDS.ADD_MEMBERS_TO_WORKSPACE, () => ({
+                onyxData: [
+                    {
+                        onyxMethod: Onyx.METHOD.MERGE,
+                        key: policyKey,
+                        value: {employeeList: {[secondaryEmail]: null, [primaryEmail]: {email: primaryEmail, role: CONST.POLICY.ROLE.USER}}},
+                    },
+                ],
+            }));
+            Member.addMembersToWorkspace(
+                {[secondaryEmail]: primaryAccountID},
+                {},
+                '',
+                await getOnyxValue(policyKey),
+                [ownerAccountID],
+                CONST.POLICY.ROLE.USER,
+                {accountID: ownerAccountID, email: ownerEmail},
+                {},
+            );
+            await waitForBatchedUpdates();
+
+            // Then the placeholder keeps the secondary login out of the invite options while the member is still there
+            const policyAfterInvite = await getOnyxValue(policyKey);
+            expect(policyAfterInvite?.employeeList?.[secondaryEmail]).toEqual({});
+            expect(getIneligibleInvitees(policyAfterInvite?.employeeList)).toContain(secondaryEmail);
+
+            // When the member is removed by their primary (rendered) login
+            Member.removeMembers(policyAfterInvite, [primaryEmail], {[primaryEmail]: primaryAccountID});
+            await waitForBatchedUpdates();
+
+            // Then the placeholder is gone with the member, so the secondary login can be invited again
+            const policyAfterRemoval = await getOnyxValue(policyKey);
+            expect(policyAfterRemoval?.employeeList?.[primaryEmail]).toBeUndefined();
+            expect(policyAfterRemoval?.employeeList?.[secondaryEmail]).toBeUndefined();
+            expect(getIneligibleInvitees(policyAfterRemoval?.employeeList)).not.toContain(secondaryEmail);
+            expect(policyAfterRemoval?.employeeList?.[ownerEmail]).toBeDefined();
         });
     });
 

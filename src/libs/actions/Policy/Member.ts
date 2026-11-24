@@ -56,7 +56,7 @@ import type {JoinWorkspaceResolution} from '@src/types/onyx/OriginalMessage';
 import type {ApprovalRule} from '@src/types/onyx/Policy';
 import type {NotificationPreference, Participant} from '@src/types/onyx/Report';
 import type {OnyxData} from '@src/types/onyx/Request';
-import {isEmptyObject} from '@src/types/utils/EmptyObject';
+import {isEmptyObject, isEmptyValueObject} from '@src/types/utils/EmptyObject';
 
 import type {NullishDeep, OnyxCollection, OnyxCollectionInputValue, OnyxEntry, OnyxUpdate} from 'react-native-onyx';
 import type {ValueOf} from 'type-fest';
@@ -440,6 +440,14 @@ function removeMembers(policy: OnyxEntry<Policy>, selectedMemberEmails: string[]
         }
         if (selectedMemberEmails.includes(primaryLogin) && secondaryLogin in employeeList && !selectedMemberEmailsWithDuplicates.includes(secondaryLogin)) {
             selectedMemberEmailsWithDuplicates.push(secondaryLogin);
+        }
+    }
+
+    for (const [login, employee] of Object.entries(employeeList)) {
+        // A secondary-login invite leaves `{}` here. It is never a member and isn't sent to the API,
+        // so drop it with the removal even when primaryLoginsInvited is empty.
+        if (isEmptyValueObject(employee) && !selectedMemberEmailsWithDuplicates.includes(login)) {
+            optimisticMembersState[login] = null;
         }
     }
 
