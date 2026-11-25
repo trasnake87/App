@@ -1,6 +1,7 @@
 import useTabBarCoveredHeight from '@components/Navigation/TabBarBottomContent/useTabBarCoveredHeight';
 
 import useBottomSafeSafeAreaPaddingStyle from '@hooks/useBottomSafeSafeAreaPaddingStyle';
+import useResponsiveLayout from '@hooks/useResponsiveLayout';
 import useSafeAreaPaddings from '@hooks/useSafeAreaPaddings';
 
 import type {StyleProp, ViewStyle} from 'react-native';
@@ -20,7 +21,8 @@ function useTabRootScrollProps(
 ): TabRootScrollProps {
     const tabBarCoveredHeight = useTabBarCoveredHeight();
     const {paddingBottom: safeAreaPaddingBottom} = useSafeAreaPaddings(true);
-    const isCoveredByTabBar = tabBarCoveredHeight > 0;
+    // The offline indicator is laid over the content of every narrow tab root, whatever the bar or the keyboard covers.
+    const {shouldUseNarrowLayout: isCoveredByTabBar} = useResponsiveLayout();
     const coveredHeightPadding = hasBottomSafeAreaPadding ? tabBarCoveredHeight - safeAreaPaddingBottom : tabBarCoveredHeight;
 
     const contentContainerStyle = useBottomSafeSafeAreaPaddingStyle({
