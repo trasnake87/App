@@ -26,7 +26,8 @@ import type {Policy} from '@src/types/onyx';
 
 import type {OnyxEntry} from 'react-native-onyx';
 
-import React, {useEffect, useState} from 'react';
+import {NavigationContext} from '@react-navigation/core';
+import React, {useContext, useEffect, useState} from 'react';
 import {View} from 'react-native';
 
 import type {WithFullTransactionOrNotFoundProps} from './withFullTransactionOrNotFound';
@@ -48,6 +49,7 @@ function IOURequestStepPerDiemWorkspace({route, navigation, transaction}: IOUReq
     const {isOffline} = useNetwork();
     const [pendingPolicyID, setPendingPolicyID] = useState<string>();
     const [pendingPolicy] = useOnyx(`${ONYXKEYS.COLLECTION.POLICY}${pendingPolicyID}`);
+    const tabNavigation = useContext(NavigationContext);
 
     const selectWorkspace = (policy: OnyxEntry<Policy>) => {
         const {targetReport, targetIouType, transactionReportID} = getInitialPerDiemTargetReport(
@@ -64,16 +66,16 @@ function IOURequestStepPerDiemWorkspace({route, navigation, transaction}: IOUReq
         }
 
         const perDiemUnit = getPerDiemCustomUnit(policy);
-        if (!perDiemUnit && policy?.id) {
+        if (!perDiemUnit?.rates && policy?.id) {
             fetchPerDiemRates(policy.id);
         }
 
         const canDestinationResolvePolicy = !!perDiemUnit || (!!targetReport.policyID && targetReport.policyID !== CONST.POLICY.ID_FAKE);
-        if (!canDestinationResolvePolicy) {
+        // Wait under the tab bar; offline, Destination's offline view keeps its "<" and reconnect fetch
+        if (!canDestinationResolvePolicy || (!perDiemUnit?.rates && !isOffline)) {
             setPendingPolicyID(policy?.id);
             return;
         }
-        setPendingPolicyID(undefined);
 
         setTransactionReport(transactionID, {reportID: transactionReportID}, true);
         if (targetIouType === CONST.IOU.TYPE.TRACK) {
@@ -98,13 +100,33 @@ function IOURequestStepPerDiemWorkspace({route, navigation, transaction}: IOUReq
     };
 
     useEffect(() => {
-        if (!pendingPolicyID || !getPerDiemCustomUnit(pendingPolicy)) {
+        if (!pendingPolicyID || !getPerDiemCustomUnit(pendingPolicy)?.rates) {
             return;
         }
-        const frame = requestAnimationFrame(() => selectWorkspace(pendingPolicy));
+        const frame = requestAnimationFrame(() => {
+            if (tabNavigation && !tabNavigation.isFocused()) {
+                return; // user switched tabs
+            }
+            selectWorkspace(pendingPolicy);
+        });
         return () => cancelAnimationFrame(frame);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingPolicy, pendingPolicyID]);
+
+    useEffect(() => {
+        if (isOffline || !pendingPolicyID || getPerDiemCustomUnit(pendingPolicy)?.rates) {
+            return;
+        }
+        fetchPerDiemRates(pendingPolicyID); // reads dropped offline aren't replayed
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOffline]);
+
+    useEffect(() => {
+        if (!pendingPolicyID || !tabNavigation) {
+            return;
+        }
+        return tabNavigation.addListener('focus', () => setPendingPolicyID(undefined));
+    }, [pendingPolicyID, tabNavigation]);
 
     if (pendingPolicyID) {
         if (isOffline) {
