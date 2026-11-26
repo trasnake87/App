@@ -262,6 +262,10 @@ function ReportActionItem({
     // A reveal holds only for the action and decision it was made on, so a new decision or a recycled row hides the message again
     const [revealedModeration, setRevealedModeration] = useReportActionItemState<{reportActionID: string; decision: OnyxTypes.DecisionName | undefined} | undefined>(undefined);
     const isHidden = hasBeenFlagged && (revealedModeration?.reportActionID !== action.reportActionID || revealedModeration?.decision !== latestDecision);
+    // Drop a reveal that no longer applies, otherwise it would apply again once the same decision or the same action comes back to this row
+    if (revealedModeration && (revealedModeration.reportActionID !== action.reportActionID || revealedModeration.decision !== latestDecision)) {
+        setRevealedModeration(undefined);
+    }
     const {isActiveReportAction: isActiveReactionListReportAction, hideReactionList} = useContext(ReactionListContext);
     const {updateHiddenAttachments} = useContext(AttachmentModalContext);
     const popoverAnchorRef = useRef<ComponentRef<typeof View>>(null);

@@ -4426,6 +4426,44 @@ describe('ReportActionItem', () => {
             expectHidden('second flagged message');
         });
 
+        it.each([
+            ['a moderator hides the message', CONST.MODERATION.MODERATOR_DECISION_HIDDEN],
+            ['the message is approved', CONST.MODERATION.MODERATOR_DECISION_APPROVED],
+            ['the decision is cleared', undefined],
+        ])('needs a new reveal when %s and the decision then returns to the one it was revealed on', async (_, decisionInBetween) => {
+            // Given a flagged comment the user has revealed
+            const {rerender} = render(renderRow(createModeratedComment(FLAGGED_ACTION_ID, 'flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE)));
+            await waitForBatchedUpdatesWithAct();
+            await revealMessage();
+            expectRevealed('flagged message');
+
+            // When the decision changes and then returns to the earlier one
+            rerender(renderRow(createModeratedComment(FLAGGED_ACTION_ID, 'flagged message', decisionInBetween)));
+            await waitForBatchedUpdatesWithAct();
+            rerender(renderRow(createModeratedComment(FLAGGED_ACTION_ID, 'flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE)));
+            await waitForBatchedUpdatesWithAct();
+
+            // Then the earlier reveal does not apply again
+            expectHidden('flagged message');
+        });
+
+        it('needs a new reveal when a reused row comes back to the action that was revealed', async () => {
+            // Given a row where the user has revealed a flagged comment
+            const {rerender} = render(renderRow(createModeratedComment(FLAGGED_ACTION_ID, 'first flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE)));
+            await waitForBatchedUpdatesWithAct();
+            await revealMessage();
+            expectRevealed('first flagged message');
+
+            // When the row renders another flagged comment and then the first one again
+            rerender(renderRow(createModeratedComment(OTHER_ACTION_ID, 'second flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE)));
+            await waitForBatchedUpdatesWithAct();
+            rerender(renderRow(createModeratedComment(FLAGGED_ACTION_ID, 'first flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE)));
+            await waitForBatchedUpdatesWithAct();
+
+            // Then the first comment is hidden, as it is after any other change of the row
+            expectHidden('first flagged message');
+        });
+
         it('does not hide a comment without a moderation decision when a row with a hidden message is reused', async () => {
             // Given a row showing a hidden flagged comment
             const {rerender} = render(renderRow(createModeratedComment(FLAGGED_ACTION_ID, 'flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE)));
