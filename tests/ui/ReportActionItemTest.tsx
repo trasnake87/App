@@ -4326,6 +4326,123 @@ describe('ReportActionItem', () => {
         });
     });
 
+    describe('Revealed moderated messages', () => {
+        const FLAGGED_ACTION_ID = '12345';
+        const OTHER_ACTION_ID = '12346';
+
+        function createModeratedComment(reportActionID: string, text: string, decision?: DecisionName) {
+            const action = createReportAction(CONST.REPORT.ACTIONS.TYPE.ADD_COMMENT, {});
+            action.reportActionID = reportActionID;
+            action.automatic = false;
+            action.message = [{type: 'COMMENT', html: text, text, ...(decision ? {moderationDecision: {decision}} : {})}];
+            return action;
+        }
+
+        // The row stays mounted and only its props change, the way a list hands a mounted row a new or updated action
+        function renderRow(action: ReportAction) {
+            return (
+                <ComposeProviders
+                    components={[OnyxListItemProvider, CurrentUserPersonalDetailsProvider, LocaleContextProvider, CurrencyListContextProvider, HTMLEngineProvider, PlaybackContextProvider]}
+                >
+                    <ScreenWrapper testID="test">
+                        <PortalProvider>
+                            <ReportActionItem
+                                reportsParentHierarchy={undefined}
+                                chatReport={undefined}
+                                report={undefined}
+                                transactionThreadReport={undefined}
+                                parentReportAction={undefined}
+                                action={action}
+                                displayAsGroup={false}
+                                shouldDisplayNewMarker={false}
+                                isFirstVisibleReportAction={false}
+                            />
+                        </PortalProvider>
+                    </ScreenWrapper>
+                </ComposeProviders>
+            );
+        }
+
+        function expectHidden(text: string) {
+            expect(screen.getByText(translateLocal('moderation.revealMessage'))).toBeOnTheScreen();
+            expect(screen.queryByText(translateLocal('moderation.hideMessage'))).not.toBeOnTheScreen();
+            expect(screen.queryByText(text)).not.toBeOnTheScreen();
+        }
+
+        function expectRevealed(text: string) {
+            expect(screen.getByText(translateLocal('moderation.hideMessage'))).toBeOnTheScreen();
+            expect(screen.getByText(text)).toBeOnTheScreen();
+        }
+
+        async function revealMessage() {
+            fireEvent.press(screen.getByText(translateLocal('moderation.revealMessage')));
+            await waitForBatchedUpdatesWithAct();
+        }
+
+        it('stays revealed when the action is updated with the same moderation decision', async () => {
+            // Given a flagged comment the user has revealed
+            const action = createModeratedComment(FLAGGED_ACTION_ID, 'flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE);
+            const {rerender} = render(renderRow(action));
+            await waitForBatchedUpdatesWithAct();
+            await revealMessage();
+            expectRevealed('flagged message');
+
+            // When the action is updated with a new message array and another changed field, but the same decision
+            rerender(renderRow({...createModeratedComment(FLAGGED_ACTION_ID, 'flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE), lastModified: '2026-11-18 10:01:01.000'}));
+            await waitForBatchedUpdatesWithAct();
+
+            // Then the message stays revealed
+            expectRevealed('flagged message');
+        });
+
+        it('is hidden again when the moderation decision changes', async () => {
+            // Given a flagged comment the user has revealed
+            const action = createModeratedComment(FLAGGED_ACTION_ID, 'flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE);
+            const {rerender} = render(renderRow(action));
+            await waitForBatchedUpdatesWithAct();
+            await revealMessage();
+            expectRevealed('flagged message');
+
+            // When a moderator hides the message
+            rerender(renderRow(createModeratedComment(FLAGGED_ACTION_ID, 'flagged message', CONST.MODERATION.MODERATOR_DECISION_HIDDEN)));
+            await waitForBatchedUpdatesWithAct();
+
+            // Then the message is hidden again
+            expectHidden('flagged message');
+        });
+
+        it('hides another flagged action when a row with a revealed message is reused', async () => {
+            // Given a row where the user has revealed a flagged comment
+            const {rerender} = render(renderRow(createModeratedComment(FLAGGED_ACTION_ID, 'first flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE)));
+            await waitForBatchedUpdatesWithAct();
+            await revealMessage();
+            expectRevealed('first flagged message');
+
+            // When the same row renders a different flagged comment with the same decision
+            rerender(renderRow(createModeratedComment(OTHER_ACTION_ID, 'second flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE)));
+            await waitForBatchedUpdatesWithAct();
+
+            // Then that comment is hidden, because the reveal belonged to the first one
+            expectHidden('second flagged message');
+        });
+
+        it('does not hide a comment without a moderation decision when a row with a hidden message is reused', async () => {
+            // Given a row showing a hidden flagged comment
+            const {rerender} = render(renderRow(createModeratedComment(FLAGGED_ACTION_ID, 'flagged message', CONST.MODERATION.MODERATOR_DECISION_PENDING_HIDE)));
+            await waitForBatchedUpdatesWithAct();
+            expectHidden('flagged message');
+
+            // When the same row renders a comment nobody flagged
+            rerender(renderRow(createModeratedComment(OTHER_ACTION_ID, 'regular message')));
+            await waitForBatchedUpdatesWithAct();
+
+            // Then that comment is shown without a moderation button
+            expect(screen.getByText('regular message')).toBeOnTheScreen();
+            expect(screen.queryByText(translateLocal('moderation.revealMessage'))).not.toBeOnTheScreen();
+            expect(screen.queryByText(translateLocal('moderation.hideMessage'))).not.toBeOnTheScreen();
+        });
+    });
+
     // Path: No FE flow creates IOU + reject/cancel/delete/approve actions; this defensive path is only
     // reachable from BE-emitted actions
     describe('IOUReportActionMessage edge subtypes', () => {

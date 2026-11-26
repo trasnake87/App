@@ -44,9 +44,9 @@ import type {ReportsSplitNavigatorParamList} from '@libs/Navigation/types';
 import {
     getAgentPromptUpdatedMessage,
     getIOUReportIDFromReportActionPreview,
+    getModerationFlagState,
     getOriginalMessage,
     getPaymentMessageWithExpectedDate,
-    getReportActionMessage,
     getReportActionText,
     getWhisperedTo,
     isActionOfType,
@@ -55,7 +55,6 @@ import {
     getVisibleReportActionErrors,
     isMessageDeleted,
     isMoneyRequestAction,
-    isPendingRemove,
     isTripPreview,
     isWhisperActionTargetedToOthers,
     shouldHidePayAction,
@@ -259,7 +258,10 @@ function ReportActionItem({
     const [isContextMenuActive, setIsContextMenuActive] = useReportActionItemState(() => isActiveReportAction(action.reportActionID));
     const [isEmojiPickerActive, setIsEmojiPickerActive] = useReportActionItemState<boolean | undefined>(undefined);
     const [isPaymentMethodPopoverActive, setIsPaymentMethodPopoverActive] = useReportActionItemState<boolean | undefined>(undefined);
-    const [isHidden, setIsHidden] = useReportActionItemState(false);
+    const {latestDecision, hasBeenFlagged} = getModerationFlagState(action);
+    // A reveal holds only for the action and decision it was made on, so a new decision or a recycled row hides the message again
+    const [revealedModeration, setRevealedModeration] = useReportActionItemState<{reportActionID: string; decision: OnyxTypes.DecisionName | undefined} | undefined>(undefined);
+    const isHidden = hasBeenFlagged && (revealedModeration?.reportActionID !== action.reportActionID || revealedModeration?.decision !== latestDecision);
     const {isActiveReportAction: isActiveReactionListReportAction, hideReactionList} = useContext(ReactionListContext);
     const {updateHiddenAttachments} = useContext(AttachmentModalContext);
     const popoverAnchorRef = useRef<ComponentRef<typeof View>>(null);
@@ -287,7 +289,7 @@ function ReportActionItem({
     const [sendMoneyChatReportActions] = useOnyx(`${ONYXKEYS.COLLECTION.REPORT_ACTIONS}${getNonEmptyStringOnyxID(isSendingMoney ? report?.chatReportID : undefined)}`);
 
     const updateHiddenState = (isHiddenValue: boolean) => {
-        setIsHidden(isHiddenValue);
+        setRevealedModeration(isHiddenValue ? undefined : {reportActionID: action.reportActionID, decision: latestDecision});
         const message = Array.isArray(action.message) ? action.message?.at(-1) : action.message;
         const isAttachment = (message?.html ?? '').search(CONST.REGEX.ATTACHMENT.ATTACHMENT_REGEX) !== -1 || isReportMessageAttachment(message);
         if (!isAttachment) {
@@ -384,27 +386,6 @@ function ReportActionItem({
 
         hideEmojiPicker(true);
     }, [isDeletedParentAction, action.reportActionID]);
-
-    // Hide the message if it is being moderated for a higher offense, or is hidden by a moderator
-    // Removed messages should not be shown anyway and should not need this flow
-    const latestDecision = getReportActionMessage(action)?.moderationDecision?.decision ?? '';
-    useEffect(() => {
-        if (action.actionName !== CONST.REPORT.ACTIONS.TYPE.ADD_COMMENT) {
-            return;
-        }
-
-        // Hide reveal message button and show the message if latestDecision is changed to empty
-        if (!latestDecision) {
-            setIsHidden(false);
-            return;
-        }
-
-        if (![CONST.MODERATION.MODERATOR_DECISION_APPROVED, CONST.MODERATION.MODERATOR_DECISION_PENDING].some((item) => item === latestDecision) && !isPendingRemove(action)) {
-            setIsHidden(true);
-            return;
-        }
-        setIsHidden(false);
-    }, [latestDecision, action, setIsHidden]);
 
     const toggleContextMenuFromActiveReportAction = () => {
         setIsContextMenuActive(isActiveReportAction(action.reportActionID));
